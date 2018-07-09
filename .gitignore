@@ -1,0 +1,9 @@
+/venv
+
+**/__pycache__/
+**/*.pyc
+
+# pytest coverage reports and cache
+.coverage
+.pytest_cache
+htmlcov
