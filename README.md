@@ -62,8 +62,8 @@ Start the client:
 To run the tests:
 
     cd src
-    pytest
+    sh test.sh
 
-To get coverage results
+The coverage can be viewed by opening in the browser:
 
-    pytest --cov=. --cov-report html
+    htmlcov/index.html

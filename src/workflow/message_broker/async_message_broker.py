@@ -3,6 +3,7 @@ import threading
 
 import pika
 
+
 def progress(*args):
     """Utility function to facilitate debugging
 
@@ -72,7 +73,6 @@ class AsyncConnection(object):
             progress("Channel closed:", code, text)
             self.disconnect()
 
-
         def on_open_channel(channel):
             """Called when a channel has been successfully established
 
@@ -88,7 +88,6 @@ class AsyncConnection(object):
 
             # Release the lock set in the connect() function so that this function can return the result
             self._lock.release()
-
 
         # Create a Channel, on_open_channel is called on success
         self._channel = connection.channel(on_open_callback=on_open_channel)
@@ -121,7 +120,6 @@ class AsyncConnection(object):
             self._lock.release()
             self.disconnect()
 
-
         def on_close_connection(connection, code, text):
             """Called when a connection is closed
 
@@ -133,7 +131,6 @@ class AsyncConnection(object):
 
             progress("Connection closed:", code, text)
             self._connection = None
-
 
         def eventloop():
             """The RabbitMQ eventloop.
@@ -148,7 +145,6 @@ class AsyncConnection(object):
             except Exception as e:
                 progress("Eventloop exception:", e)
             progress("Eventloop ended")
-
 
         # A callback function can be specified that will be called when a connection is established
         self._on_connect_callback = on_connect_callback
