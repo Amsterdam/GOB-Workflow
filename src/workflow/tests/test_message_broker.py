@@ -20,10 +20,7 @@ class MockIoloop:
             self.running = False
 
     def stop(self):
-        try:
-            self.lock.release()
-        except RuntimeError:
-            pass
+        self.lock.release()
 
 class MockDeliver:
 
@@ -43,8 +40,6 @@ class MockChannel:
 
     def add_on_close_callback(self, callback):
         self.on_close = callback
-        if not self.connection_succes:
-            callback(self, code=1, text="Error")
 
     def close(self):
         self.is_open = False
@@ -106,11 +101,6 @@ class MockConnection:
             self.ioloop.stop()
         if self.on_close is not None:
             self.on_close(self, code=0, text="OnClose")
-
-    def __exit__(self):
-        if self.ioloop.running:
-            self.ioloop.stop()
-        pass
 
 class MockPika:
 
