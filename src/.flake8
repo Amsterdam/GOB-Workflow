@@ -1,0 +1,4 @@
+[flake8]
+exclude=tests
+max-complexity=8
+max-line-length = 119
