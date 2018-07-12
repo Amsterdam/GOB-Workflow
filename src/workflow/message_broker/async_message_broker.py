@@ -218,15 +218,15 @@ class AsyncConnection(object):
             def handle_message(channel, basic_deliver, properties, body):
                 """Handle the incoming message
 
-                The message body is a json object which will be parsed on receipt (todo)
+                The message body is a json object which will be parsed on receipt
 
                 Call the handler and acknowledge the message after it has been successfully handled
 
-                :param channel: todo
-                :param basic_deliver: todo
-                :param properties: todo
-                :param body: The message body
-                :return:
+                :param channel: The channel that represents the connection with RabbitMQ
+                :param basic_deliver: The deliver properties, e.g. is redelivery, routing_key, ...
+                :param properties: general message properties
+                :param body: The message body (json dump)
+                :return: None
                 """
 
                 # Try to parse body as json message, else pass it as it is received
