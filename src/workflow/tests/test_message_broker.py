@@ -3,6 +3,8 @@ import json
 import pika
 import pytest
 
+from mock import patch
+
 from workflow.message_broker.async_message_broker import AsyncConnection
 
 class MockIoloop:
@@ -173,6 +175,18 @@ def test_connect_failure(monkeypatch):
     connection = AsyncConnection('address')
     assert(connection.connect() == False)
 
+
+def test_connect_context_manager(monkeypatch):
+    # Test if context manager calls disconnect on exit with statement
+    mock_connection(monkeypatch, connection_success=True)
+
+    org_connection=None
+    with patch.object(AsyncConnection, 'disconnect') as mocked_disconnect:
+        with AsyncConnection('address') as connection:
+            org_connection = connection # save to call the real disconnect afterwards
+            pass
+        assert(mocked_disconnect.called)
+    org_connection.disconnect()    # Call the real disconnect
 
 def test_connect_success(monkeypatch):
     # Test if connect reports connection success

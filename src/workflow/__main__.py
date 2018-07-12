@@ -1,5 +1,4 @@
 import time
-import atexit
 
 from workflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_QUEUE, LOG_QUEUE
 from workflow.message_broker.async_message_broker import AsyncConnection
@@ -30,16 +29,9 @@ def on_message(queue, key, msg):
     return True  # Acknowledge message when it has been fully handled
 
 
-# Construct a asynchronous connection with the message broker
-connection = AsyncConnection(MESSAGE_BROKER)
+with AsyncConnection(MESSAGE_BROKER) as connection:
 
-# Try to connect
-if connection.connect():
-
-    # Schedule a disconnect to gracefully end the connection
-    atexit.register(connection.disconnect)
-
-    # Subscribe to the required message queues
+    # Subscribe to the queues
     connection.subscribe(QUEUES, on_message)
 
     # Repeat forever
