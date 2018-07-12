@@ -49,6 +49,13 @@ class AsyncConnection(object):
         # Optional method, called on connection established
         self._on_connect_callback = None
 
+    def __enter__(self):
+        self.connect()
+        return self
+
+    def __exit__(self, *args):
+        self.disconnect()
+
     def _on_open_connection(self, connection):
         """Called on successful connection to RabbitMQ
 
