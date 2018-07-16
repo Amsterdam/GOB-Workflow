@@ -196,7 +196,7 @@ class AsyncConnection(object):
 
         # Publish the message as a persistent message on the queue
         self._channel.basic_publish(
-            exchange=queue["name"],
+            exchange=queue["exchange"],
             routing_key=key,
             properties=pika.BasicProperties(
                 delivery_mode=2  # Make messages persistent
@@ -243,7 +243,7 @@ class AsyncConnection(object):
                 except json.decoder.JSONDecodeError:
                     pass
 
-                if message_handler(queue["name"], basic_deliver.routing_key, msg) is not False:
+                if message_handler(self, queue, basic_deliver.routing_key, msg) is not False:
                     # Default is to acknowledge message
                     channel.basic_ack(basic_deliver.delivery_tag)
 
@@ -266,7 +266,7 @@ class AsyncConnection(object):
         for queue in queues:
             self._channel.queue_bind(
                 callback=on_queue_bind(queue),
-                exchange=queue["name"],
+                exchange=queue["exchange"],
                 queue=queue["name"],
                 routing_key=queue["key"]
             )
