@@ -2,6 +2,12 @@ version: '3'
 
 services:
 
+  workflow_service:
+    build: src
+    container_name: workflow_service
+    environment:
+      MESSAGE_BROKER_ADDRESS: rabbitmq
+
   rabbitmq:
     image: "rabbitmq:3-management"
     container_name: rabbitmq
