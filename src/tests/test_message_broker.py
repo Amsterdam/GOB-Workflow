@@ -5,7 +5,8 @@ import pytest
 
 from mock import patch
 
-from workflow.message_broker.async_message_broker import AsyncConnection
+from gobworkflow.message_broker.async_message_broker import AsyncConnection
+
 
 class MockIoloop:
 
@@ -23,6 +24,7 @@ class MockIoloop:
 
     def stop(self):
         self.lock.release()
+
 
 class MockDeliver:
 
@@ -81,6 +83,7 @@ class MockChannel:
         consumed_message = "mybody"
         consumer_callback(self, MockDeliver("mykey"), {}, "mybody")
 
+
 class MockConnection:
 
     connection_success = True
@@ -104,6 +107,7 @@ class MockConnection:
         if self.on_close is not None:
             self.on_close(self, code=0, text="OnClose")
 
+
 class MockPika:
 
     selectConnectionOK = True
@@ -123,9 +127,11 @@ class MockPika:
             on_open_error_callback(None, 'Fail to open connection')
             return None
 
+
 consumed_message = None
 published_message = None
 on_connect_called = False
+
 
 def mock_connection(monkeypatch, connection_success):
     _pika = MockPika()
@@ -188,6 +194,7 @@ def test_connect_context_manager(monkeypatch):
         assert(mocked_disconnect.called)
     org_connection.disconnect()    # Call the real disconnect
 
+
 def test_connect_success(monkeypatch):
     # Test if connect reports connection success
     mock_connection(monkeypatch, connection_success=True)
@@ -227,6 +234,7 @@ def test_publish(monkeypatch):
     connection = AsyncConnection('address')
     connection.connect()
     queue = {
+        "exchange": "exchange",
         "name": "name",
         "key": "key"
     }
@@ -254,17 +262,18 @@ def test_subscribe(monkeypatch):
 
     result = None
 
-    def on_message(queue, key, body):
-        assert(queue == "name")
+    def on_message(self, queue, key, body):
         assert(key == "mykey")
         assert(body == "mybody")
 
     connection = AsyncConnection('address')
     connection.connect()
     queue = {
+        "exchange": "exchange",
         "name": "name",
         "key": "key"
     }
     connection.subscribe([queue, queue], on_message)
+    connection.publish(queue, "key", "mybody")
     connection.disconnect()
     assert(consumed_message == "mybody")

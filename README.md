@@ -86,7 +86,7 @@ export MESSAGE_BROKER_ADDRESS=localhost
 Start the client, _using the virtual environment_:
 
     (venv) $ cd src
-    (venv) $ python -m workflow
+    (venv) $ python -m gobworkflow
     
 ## Tests
 
