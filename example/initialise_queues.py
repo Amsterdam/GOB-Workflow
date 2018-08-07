@@ -53,8 +53,8 @@ if __name__ == "__main__":
                     name=name,
                     route=route)
 
-            print(f"Succesfully created RabbitMQ message queues at '{RABBITMQ}'")
+            print("Succesfully created RabbitMQ message queues at 'localhost'")
 
     except Exception as e:
-        print(f"Error: Failed to connect to RabbitMQ at '{RABBITMQ}', {str(e)}")
+        print("Error: Failed to connect to RabbitMQ at 'localhost', {str(e)}")
         sys.exit(1)
