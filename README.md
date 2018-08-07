@@ -35,7 +35,47 @@ The message will then be routed further or rejected.
     
 # Local Installation
 
-Start the [GOB Message Broker](https://github.com/Amsterdam/GOB-Message-Broker)
+Create a virtual environment:
+
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r src/requirements.txt
+    
+Or activate the previously created virtual environment
+
+    source venv/bin/activate
+    
+For the benefits of local development an instance of RabbitMQ can be spun up,
+it will run on the gob-network, which needs to be created manually,
+if it doesn't exist yet:
+
+```bash
+docker network create gob-network
+```
+
+Then start the dockerized instance of RabbitMQ:
+
+```bash
+docker-compose up rabbitmq &
+```
+
+This starts the RabbitMQ message broker with hostname "rabbitmq" on the gob-network.
+Locally the RabbitMQ message broker can be accessed by "localhost".
+
+RabbitMQ operates on port 5672 (used by Advanced Message Queuing Protocol (AMQP) 0-9-1 and 1.0 clients)
+
+The [RabbitMQ management interface](https://www.rabbitmq.com/management.html) is available at port 15672:
+
+    http://localhost:15672
+
+If it is the first run of RabbitMQ, the GOB message queues need to be initialised 
+_using the current virtual environment:_
+
+```bash
+(venv) $ python example/initialise_queues.py
+```
+
+# Running locally
 
 Expose the IP address of the message broker in the environment:
 
@@ -43,26 +83,17 @@ Expose the IP address of the message broker in the environment:
 export MESSAGE_BROKER_ADDRESS=localhost
 ```
 
-Create a virtual environment:
+Start the client, _using the virtual environment_:
 
-    python3 -m venv venv
-    pip install -r src/requirements.txt
-    
-Or activate the previously created virtual environment
-
-    source venv/bin/activate
-    
-Start the client:
-
-    cd src
-    python -m workflow
+    (venv) $ cd src
+    (venv) $ python -m workflow
     
 ## Tests
 
-To run the tests:
+To run the tests, _using the virtual environment_:
 
-    cd src
-    sh test.sh
+    (venv) $ cd src
+    (venv) $ sh test.sh
 
 The coverage can be viewed by opening in the browser:
 
