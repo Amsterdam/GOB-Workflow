@@ -1,3 +1,7 @@
+# flake8: noqa
+# todo: check if this file can be simplified
+# todo: also, this should be shared amongst gob-components
+
 import json
 import threading
 

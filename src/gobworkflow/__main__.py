@@ -1,7 +1,7 @@
 import time
 
-from workflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_QUEUE, LOG_QUEUE
-from workflow.message_broker.async_message_broker import AsyncConnection
+from gobworkflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_QUEUE, LOG_QUEUE
+from gobworkflow.message_broker.async_message_broker import AsyncConnection
 
 
 def on_message(connection, queue, key, msg):
