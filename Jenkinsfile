@@ -28,7 +28,7 @@ node {
                "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml run -u root --rm test"
 
         }, {
-            sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml workflow_service down"
+            sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml down"
         }
     }
 
