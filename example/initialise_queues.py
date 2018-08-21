@@ -1,3 +1,15 @@
+"""Message broker initialisation
+
+The message broker serves a number of persistent queues holding persistent messages.
+
+Creating persistent queues is an independent task.
+
+The queues are required by the import and upload modules.
+These modules are responsable for importing and uploading and not for creating the queues.
+
+The initialisation of the queues is an integral part of the initialisation and startup of the message broker.
+
+"""
 import sys
 import pika
 

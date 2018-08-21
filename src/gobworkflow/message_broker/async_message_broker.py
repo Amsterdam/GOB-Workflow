@@ -1,6 +1,14 @@
 # flake8: noqa
 # todo: check if this file can be simplified
 # todo: also, this should be shared amongst gob-components
+"""Asynchronous Message Broker
+
+Implementation of an asynchronous message broker.
+
+The code in this module is based upon the example code in the pika docs.
+The code is modified to allow for asynchronous send and receive in parallel
+
+"""
 
 import json
 import threading

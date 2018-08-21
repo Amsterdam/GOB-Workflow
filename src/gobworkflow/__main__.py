@@ -1,3 +1,12 @@
+"""Main workflow logic
+
+The workflow manager subscribes to the workflow and log queues.
+
+Log messages are simply printed (for now)
+Workflow messages consist of proposals. A proposal is evaluated (for now always OK) and then routed as a request
+to the service that can handle the proposal.
+
+"""
 import time
 
 from gobworkflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_QUEUE, LOG_QUEUE
