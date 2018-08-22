@@ -2,23 +2,23 @@ import os
 
 MESSAGE_BROKER = os.environ["MESSAGE_BROKER_ADDRESS"]
 
-WORKFLOW_QUEUE = "gob.workflow"
-LOG_QUEUE = "gob.log"
+WORKFLOW_EXCHANGE = "gob.workflow"
+LOG_EXCHANGE = "gob.log"
 
 QUEUES = [
     {
-        "exchange": "gob.workflow",
-        "name": WORKFLOW_QUEUE+'.proposal',
+        "exchange": WORKFLOW_EXCHANGE,
+        "name": WORKFLOW_EXCHANGE + '.proposal',
         "key": "*.proposal"
     },
     {
-        "exchange": "gob.workflow",
-        "name": WORKFLOW_QUEUE+'.request',
+        "exchange": WORKFLOW_EXCHANGE,
+        "name": WORKFLOW_EXCHANGE + '.request',
         "key": "*.request"
     },
     {
-        "exchange": "gob.log",
-        "name": LOG_QUEUE+'.all',
+        "exchange": LOG_EXCHANGE,
+        "name": LOG_EXCHANGE + '.all',
         "key": "#"
     }
 ]

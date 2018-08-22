@@ -1,6 +1,6 @@
 import time
 
-from gobworkflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_QUEUE, LOG_QUEUE
+from gobworkflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_EXCHANGE, LOG_EXCHANGE
 from gobworkflow.message_broker.async_message_broker import AsyncConnection
 
 
@@ -14,11 +14,11 @@ def on_message(connection, queue, key, msg):
     :return:
     """
 
-    if queue["name"] == LOG_QUEUE:
+    if queue["name"] == LOG_EXCHANGE:
         # For now, print the message to stdout
         # Eventually store the log message in a database
         print(msg["msg"])
-    elif queue["name"] == WORKFLOW_QUEUE:
+    elif queue["name"] == WORKFLOW_EXCHANGE:
         if key == "fullimport.proposal":
             print("=> 'fullimport.proposal' accepted, publish 'fullimport.request'")
             connection.publish(queue, "fullimport.request", msg)
