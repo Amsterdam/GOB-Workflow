@@ -1,6 +1,9 @@
 FROM amsterdam/docker_python:latest
 MAINTAINER datapunt@amsterdam.nl
 
+# Copy .jenkins scripts to where jenkins / ansible expect them
+COPY .jenkins /.jenkins
+
 # Install gobworkflow in /app folder
 WORKDIR /app
 
