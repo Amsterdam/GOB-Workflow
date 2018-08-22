@@ -4,6 +4,7 @@ from gobworkflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_QUEUE, LOG_QUEUE
 from gobworkflow.message_broker.async_message_broker import AsyncConnection
 
 
+# todo this has been made more generic in GOB-Upload, refactor here, move it to package
 def on_message(connection, queue, key, msg):
     """Called on every message receipt
 
