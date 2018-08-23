@@ -15,4 +15,4 @@ RUN rm requirements.txt
 # Copy gobworkflow module
 COPY gobworkflow gobworkflow
 
-CMD ['python3', '- m', 'gobworkflow']
+CMD ["python3", "-m", "gobworkflow"]
