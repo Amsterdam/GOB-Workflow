@@ -48,7 +48,7 @@ class AsyncConnection(object):
         :param address: The RabbitMQ address
         """
 
-        # The address of the RabbitMQ Message broker
+        # The connection parameters for the RabbitMQ Message broker
         self._connection_params = connection_params
 
         # The Connection and Channel objects

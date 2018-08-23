@@ -131,7 +131,7 @@ class MockPika:
 consumed_message = None
 published_message = None
 on_connect_called = False
-
+connection_params = {'host': "host", 'credentials': {'username': "username", 'password': "password"}}
 
 def mock_connection(monkeypatch, connection_success):
     _pika = MockPika()
@@ -156,9 +156,9 @@ def on_connect():
 
 def test_connection_constructor():
     # Test if a connection can be initialized
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     assert(connection is not None)
-    assert(connection._connection_params == 'address')
+    assert(connection._connection_params == connection_params)
 
 
 def test_disconnect():
@@ -178,7 +178,7 @@ def test_connect_failure(monkeypatch):
     # Test if connect reports failure to connect
     mock_connection(monkeypatch, connection_success=False)
 
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     assert(connection.connect() == False)
 
 
@@ -188,7 +188,7 @@ def test_connect_context_manager(monkeypatch):
 
     org_connection=None
     with patch.object(AsyncConnection, 'disconnect') as mocked_disconnect:
-        with AsyncConnection('address') as connection:
+        with AsyncConnection(connection_params) as connection:
             org_connection = connection # save to call the real disconnect afterwards
             pass
         assert(mocked_disconnect.called)
@@ -199,7 +199,7 @@ def test_connect_success(monkeypatch):
     # Test if connect reports connection success
     mock_connection(monkeypatch, connection_success=True)
 
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     assert(connection.connect() == True)
     connection.disconnect()
 
@@ -210,7 +210,7 @@ def test_connect_callback_success(monkeypatch):
     global on_connect_called
 
     assert(not on_connect_called)
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     connection.connect(on_connect)
     assert(on_connect_called)
     connection.disconnect()
@@ -221,7 +221,7 @@ def test_connect_callback_failure(monkeypatch):
     mock_connection(monkeypatch, connection_success=False)
     global on_connect_called
 
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     assert(not on_connect_called)
     connection.connect(on_connect)
     assert(not on_connect_called)
@@ -231,7 +231,7 @@ def test_publish(monkeypatch):
     # Test publish message
     mock_connection(monkeypatch, connection_success=True)
 
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     connection.connect()
     queue = {
         "exchange": "exchange",
@@ -247,7 +247,7 @@ def test_publish_failure(monkeypatch):
     # Test publish failure
     mock_connection(monkeypatch, connection_success=True)
 
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     queue = {
         "name": "name",
         "key": "key"
@@ -266,7 +266,7 @@ def test_subscribe(monkeypatch):
         assert(key == "mykey")
         assert(body == "mybody")
 
-    connection = AsyncConnection('address')
+    connection = AsyncConnection(connection_params)
     connection.connect()
     queue = {
         "exchange": "exchange",
