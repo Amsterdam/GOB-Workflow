@@ -42,14 +42,14 @@ class AsyncConnection(object):
 
     """
 
-    def __init__(self, address):
+    def __init__(self, connection_params):
         """Create a new AsyncConnection
 
         :param address: The RabbitMQ address
         """
 
         # The address of the RabbitMQ Message broker
-        self._address = address
+        self._connection_params = connection_params
 
         # The Connection and Channel objects
         self._connection = None
@@ -174,7 +174,7 @@ class AsyncConnection(object):
 
         # Create a connection object
         self._connection = pika.SelectConnection(
-            parameters=pika.ConnectionParameters(self._address),
+            parameters=self._connection_params,
             on_open_callback=self._on_open_connection,
             on_open_error_callback=on_error_connection,
             on_close_callback=on_close_connection)

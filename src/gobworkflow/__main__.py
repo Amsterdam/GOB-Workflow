@@ -9,7 +9,7 @@ to the service that can handle the proposal.
 """
 import time
 
-from gobworkflow.config import MESSAGE_BROKER, QUEUES, WORKFLOW_EXCHANGE, LOG_EXCHANGE
+from gobworkflow.config import QUEUES, WORKFLOW_EXCHANGE, LOG_EXCHANGE, CONNECTION_PARAMS
 from gobworkflow.message_broker.async_message_broker import AsyncConnection
 
 
@@ -45,7 +45,7 @@ def on_message(connection, queue, key, msg):
     return True  # Acknowledge message when it has been fully handled
 
 
-with AsyncConnection(MESSAGE_BROKER) as connection:
+with AsyncConnection(CONNECTION_PARAMS) as connection:
 
     # Subscribe to the queues
     connection.subscribe(QUEUES, on_message)
