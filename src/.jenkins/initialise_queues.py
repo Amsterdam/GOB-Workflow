@@ -1,7 +1,7 @@
 import sys
 import pika
 
-from gobworkflow.config import MESSAGE_BROKER, QUEUES
+from gobworkflow.config import MESSAGE_BROKER, CONNECTION_PARAMS, QUEUES
 
 
 def create_durable_message_queue(exchange, channel, name, route):
@@ -30,7 +30,7 @@ def create_durable_message_queue(exchange, channel, name, route):
 
 if __name__ == "__main__":
     try:
-        with pika.BlockingConnection(pika.ConnectionParameters(MESSAGE_BROKER)) as connection:
+        with pika.BlockingConnection(CONNECTION_PARAMS) as connection:
             channel = connection.channel()
 
             for queue in QUEUES:

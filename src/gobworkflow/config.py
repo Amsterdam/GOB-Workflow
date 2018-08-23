@@ -10,7 +10,17 @@ Two main queues are defined:
 """
 import os
 
+import pika
+
 MESSAGE_BROKER = os.environ["MESSAGE_BROKER_ADDRESS"]
+MESSAGE_BROKER_USER = os.getenv("MESSAGE_BROKER_USERNAME", "guest")
+MESSAGE_BROKER_PASSWORD = os.getenv("MESSAGE_BROKER_PASSWORD", "guest")
+
+CONNECTION_PARAMS = pika.ConnectionParameters(
+    host=MESSAGE_BROKER,
+    credentials=pika.PlainCredentials(username=MESSAGE_BROKER_USER,
+                                      password=MESSAGE_BROKER_PASSWORD)
+)
 
 WORKFLOW_EXCHANGE = "gob.workflow"
 LOG_EXCHANGE = "gob.log"
