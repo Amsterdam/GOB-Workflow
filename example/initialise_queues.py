@@ -10,6 +10,7 @@ These modules are responsable for importing and uploading and not for creating t
 The initialisation of the queues is an integral part of the initialisation and startup of the message broker.
 
 """
+import subprocess
 import sys
 import pika
 
@@ -40,7 +41,12 @@ def create_durable_message_queue(exchange, channel, name, route):
 
 if __name__ == "__main__":
     try:
-        with pika.BlockingConnection(pika.ConnectionParameters('localhost')) as connection:
+        # Add gob vhost from command-line to exposed API
+        subprocess.run('curl -i -u guest:guest -H "content-type:application/json" '
+                       '-XPUT http://localhost:15672/api/vhosts/gob', shell=True, check=True)
+
+        # Add queues to the vhost gob
+        with pika.BlockingConnection(pika.ConnectionParameters('localhost', virtual_host='gob')) as connection:
             channel = connection.channel()
 
             WORKFLOW = "gob.workflow"
