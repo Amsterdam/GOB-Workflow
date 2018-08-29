@@ -64,7 +64,7 @@ if (BRANCH == "master") {
                 build job: 'Subtask_Openstack_Playbook',
                     parameters: [
                         [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
-                        [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob_workflow.yml'],
+                        [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
                     ]
             }
         }
@@ -78,7 +78,7 @@ if (BRANCH == "master") {
     node {
         stage('Push production image') {
             tryStep "image tagging", {
-                def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}-preproduction")
+                def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
                 image.pull()
                 image.push("production")
                 image.push("latest")
@@ -92,7 +92,7 @@ if (BRANCH == "master") {
                 build job: 'Subtask_Openstack_Playbook',
                     parameters: [
                         [$class: 'StringParameterValue', name: 'INVENTORY', value: 'production'],
-                        [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob_workflow.yml'],
+                        [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
                     ]
             }
         }
