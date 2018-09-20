@@ -2,7 +2,7 @@ atomicwrites==1.1.5
 attrs==18.1.0
 coverage==4.5.1
 flake8==3.5.0
--e git+https://github.com/Amsterdam/GOB-Core@v0.2.1#egg=gobcore
+-e git+https://github.com/Amsterdam/GOB-Core@v0.2.2#egg=gobcore
 mccabe==0.6.1
 mock==2.0.0
 more-itertools==4.2.0
