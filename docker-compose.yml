@@ -15,6 +15,18 @@ services:
     - "15672:15672"
     - "5672:5672"
 
+  management_database:
+    image: amsterdam/postgres
+    ports:
+    - "5407:5432"
+    container_name: management_database
+    environment:
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: gob_management
+      POSTGRES_USER: gob
+    volumes:
+    - "~/.ssh/datapunt.key:/root/.ssh/datapunt.key"
+
 networks:
   default:
     external:

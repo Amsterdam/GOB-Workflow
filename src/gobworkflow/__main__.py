@@ -7,23 +7,43 @@ Workflow messages consist of proposals. A proposal is evaluated (for now always 
 to the service that can handle the proposal.
 
 """
+from gobcore.message_broker.config import LOG_EXCHANGE, WORKFLOW_EXCHANGE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 
+from gobworkflow.storage import connect, save_log
+
 SERVICEDEFINITION = {
-    'fullimport.proposal': {
-        'queue': "gob.workflow.proposal",
+    'import_proposal': {
+        'exchange': WORKFLOW_EXCHANGE,
+        'queue': 'gob.workflow.proposal',
+        'key': 'fullimport.proposal',
         # for now only pass through the message-content:
         'handler': lambda msg: msg,
-        'report_back': 'fullimport.request',
-        'report_queue': 'gob.workflow.request'
+        'report': {
+            'exchange': WORKFLOW_EXCHANGE,
+            'queue': 'gob.workflow.request',
+            'key': 'fullimport.request'
+        }
     },
-    'fullupdate.proposal': {
-        'queue': "gob.workflow.proposal",
+    'update_proposal': {
+        'exchange': WORKFLOW_EXCHANGE,
+        'queue': 'gob.workflow.proposal',
+        'key': 'fullupdate.proposal',
         # for now only pass through the message-content:
         'handler': lambda msg: msg,
-        'report_back': 'fullupdate.request',
-        'report_queue': 'gob.workflow.request'
+        'report': {
+            'exchange': WORKFLOW_EXCHANGE,
+            'queue': 'gob.workflow.request',
+            'key': 'fullupdate.request'
+        }
+    },
+    'save_logs': {
+        'exchange': LOG_EXCHANGE,
+        'queue': 'gob.log.all',
+        'key': '#',
+        'handler': save_log,
     },
 }
 
+connect()
 messagedriven_service(SERVICEDEFINITION)
