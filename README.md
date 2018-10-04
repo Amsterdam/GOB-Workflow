@@ -87,6 +87,15 @@ In order to start the Workflow the management database has to be running:
 docker-compose up management_database &
 ```
 
+## Management database
+
+Log messages are stored in a management database.
+In order to start the Workflow the management database has to be running:
+
+```
+docker-compose up management_database &
+```
+
 # Running locally
 
 If the message broker is not running on localhost,
