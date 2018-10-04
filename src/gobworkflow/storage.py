@@ -19,6 +19,7 @@ from gobworkflow.config import GOB_MGMT_DB
 # The _init() method is called at the end of this module
 session = None
 Base = automap_base()
+Log = None
 engine = None
 
 LOG_TABLE = 'logs'
@@ -51,39 +52,27 @@ def connect():
 
     :return:
     """
-    global session, Base, engine
+    global session, Base, engine, Log
 
     engine = create_engine(URL(**GOB_MGMT_DB))
 
-    _get_reflected_base()
-
-    if not hasattr(Base.classes, LOG_TABLE):
-        _initialize_tables()
-
-        # Update reflected base
-        _get_reflected_base()
-
-    session = Session(engine)
-
-
-def _get_reflected_base():
-    global Base, engine
-    Base.prepare(engine, reflect=True)
-    Base.metadata.reflect(bind=engine)
-
-
-def _initialize_tables():
+    # Create the database table for logs if it doesn't exist
     meta = MetaData(engine)
     columns = [get_column(column) for column in LOG_MODEL.items()]
     table = Table(LOG_TABLE, meta, *columns, extend_existing=True)
     table.create(engine, checkfirst=True)
 
-
-def save_log(msg):
-    global Base, session
+    # Reflect the database to generate classes for ORM
+    Base.prepare(engine, reflect=True)
 
     # Get the log class
     Log = Base.classes.logs
+
+    session = Session(engine)
+
+
+def save_log(msg):
+    global Log, session
 
     # Encode the json data
     json_data = json.dumps(msg.get('data', None), cls=GobTypeJSONEncoder)
