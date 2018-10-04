@@ -74,7 +74,17 @@ If it is the first run of RabbitMQ, the GOB message queues need to be initialise
 _using the current virtual environment:_
 
 ```bash
-(venv) $ python example/initialise_queues.py
+cd src
+python initialise_queues.py
+```
+
+## Management database
+
+Log messages are stored in a management database.
+In order to start the Workflow the management database has to be running:
+
+```
+docker-compose up management_database &
 ```
 
 ## Management database
