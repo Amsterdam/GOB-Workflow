@@ -88,10 +88,11 @@ docker-compose up management_database &
 
 # Running locally
 
-Expose the IP address of the message broker in the environment:
+If the message broker is not running on localhost,
+expose the IP address of the message broker in the environment:
 
 ```bash
-export MESSAGE_BROKER_ADDRESS=localhost
+export MESSAGE_BROKER_ADDRESS=<address>
 ```
 
 Start the client, _using the virtual environment_:
