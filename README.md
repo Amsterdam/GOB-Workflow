@@ -45,6 +45,8 @@ Or activate the previously created virtual environment
 
     source venv/bin/activate
     
+## RabbitMQ
+
 For the benefits of local development an instance of RabbitMQ can be spun up,
 it will run on the gob-network, which needs to be created manually,
 if it doesn't exist yet:
@@ -73,6 +75,15 @@ _using the current virtual environment:_
 
 ```bash
 (venv) $ python example/initialise_queues.py
+```
+
+## Management database
+
+Log messages are stored in a management database.
+In order to start the Workflow the management database has to be running:
+
+```
+docker-compose up management_database &
 ```
 
 # Running locally
