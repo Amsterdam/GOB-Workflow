@@ -22,6 +22,12 @@ from gobcore.message_broker.config import CONNECTION_PARAMS,\
 
 
 def _create_vhost(vhost):
+    """
+    Create a virtual host using the RabbtiMQ management interface
+
+    :param vhost: name of the virtual host
+    :return:
+    """
     response = requests.put(
         url=f"http://{MESSAGE_BROKER}:{MESSAGE_BROKER_PORT}/api/vhosts/{vhost}",
         headers={
@@ -35,6 +41,14 @@ def _create_vhost(vhost):
 
 
 def _create_exchange(channel, exchange, durable):
+    """
+    Create a RabbitMQ exchange
+
+    :param channel: the RabbitMQ connection channel
+    :param exchange: the name of the exchange
+    :param durable: specifies wether the exchange should be persistent
+    :return:
+    """
     channel.exchange_declare(
         exchange=exchange,
         exchange_type="topic",
@@ -42,6 +56,14 @@ def _create_exchange(channel, exchange, durable):
 
 
 def _create_queue(channel, queue, durable):
+    """
+    Create a RabbitMQ queue
+
+    :param channel: the RabbitMQ connection channel
+    :param queue: the name of the queue
+    :param durable: specifies wether the queue should be persistent
+    :return:
+    """
     channel.queue_declare(
         queue=queue,
         durable=durable
@@ -49,6 +71,12 @@ def _create_queue(channel, queue, durable):
 
 
 def initialize_message_broker():
+    """
+    Initializes the RabbitMQ message broker.
+
+    Creates a virtual host and persistent exxhanges and queues
+    :return:
+    """
     print(f"Initialize message broker {MESSAGE_BROKER}")
 
     print(f"Create virtual host {MESSAGE_BROKER_VHOST}")
