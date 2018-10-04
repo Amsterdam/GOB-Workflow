@@ -7,6 +7,8 @@ services:
     container_name: workflow_service
     environment:
       MESSAGE_BROKER_ADDRESS: rabbitmq
+      DATABASE_PORT_OVERRIDE: 5432
+      DATABASE_HOST_OVERRIDE: management_database
 
   rabbitmq:
     image: "rabbitmq:3-management"
@@ -14,6 +16,18 @@ services:
     ports:
     - "15672:15672"
     - "5672:5672"
+
+  management_database:
+    image: amsterdam/postgres
+    ports:
+    - "5407:5432"
+    container_name: management_database
+    environment:
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: gob_management
+      POSTGRES_USER: gob
+    volumes:
+    - "~/.ssh/datapunt.key:/root/.ssh/datapunt.key"
 
 networks:
   default:
