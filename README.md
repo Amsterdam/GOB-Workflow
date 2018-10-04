@@ -74,7 +74,8 @@ If it is the first run of RabbitMQ, the GOB message queues need to be initialise
 _using the current virtual environment:_
 
 ```bash
-(venv) $ python example/initialise_queues.py
+cd src
+python initialise_queues.py
 ```
 
 ## Management database
