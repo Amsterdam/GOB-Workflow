@@ -117,6 +117,4 @@ To run the tests, _using the virtual environment_:
     (venv) $ cd src
     (venv) $ sh test.sh
 
-The coverage can be viewed by opening in the browser:
-
-    htmlcov/index.html
+Currently there are no tests for this project.
