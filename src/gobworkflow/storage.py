@@ -80,7 +80,7 @@ def save_log(msg):
 
     # Create the log record
     record = Log(
-        timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S'),
+        timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'),
         process_id=msg.get('process_id', None),
         source=msg.get('source', None),
         entity=msg.get('entity', None),
