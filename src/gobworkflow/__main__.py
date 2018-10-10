@@ -32,6 +32,7 @@ def pass_through(msg, type):
     logger.info(log_msg, extra=extra_log_kwargs)
     return msg
 
+
 SERVICEDEFINITION = {
     'import_proposal': {
         'exchange': WORKFLOW_EXCHANGE,
