@@ -9,8 +9,29 @@ to the service that can handle the proposal.
 """
 from gobcore.message_broker.config import LOG_EXCHANGE, WORKFLOW_EXCHANGE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
+from gobcore.log import get_logger
 
 from gobworkflow.storage import connect, save_log
+
+
+logger = get_logger(name="WORKFLOW")
+
+
+def pass_through(msg, type):
+    if type == 'import':
+        log_msg = "Import proposal accepted"
+    elif type == 'update':
+        log_msg = "Update proposal accepted"
+
+    extra_log_kwargs = {
+        'process_id': msg['header']['process_id'],
+        'source': msg['header']['source'],
+        'entity': msg['header']['entity']
+    }
+
+    logger.info(log_msg, extra=extra_log_kwargs)
+    return msg
+
 
 SERVICEDEFINITION = {
     'import_proposal': {
@@ -18,7 +39,7 @@ SERVICEDEFINITION = {
         'queue': 'gob.workflow.proposal',
         'key': 'fullimport.proposal',
         # for now only pass through the message-content:
-        'handler': lambda msg: msg,
+        'handler': lambda msg: pass_through(msg, 'import'),
         'report': {
             'exchange': WORKFLOW_EXCHANGE,
             'queue': 'gob.workflow.request',
@@ -30,7 +51,7 @@ SERVICEDEFINITION = {
         'queue': 'gob.workflow.proposal',
         'key': 'fullupdate.proposal',
         # for now only pass through the message-content:
-        'handler': lambda msg: msg,
+        'handler': lambda msg: pass_through(msg, 'update'),
         'report': {
             'exchange': WORKFLOW_EXCHANGE,
             'queue': 'gob.workflow.request',

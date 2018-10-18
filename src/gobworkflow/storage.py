@@ -26,6 +26,7 @@ LOG_TABLE = 'logs'
 LOG_MODEL = {
     "logid": "GOB.PKInteger",   # Unique identification of the event, numbered sequentially
     "timestamp": "GOB.DateTime",
+    "process_id": "GOB.String",
     "source": "GOB.String",
     "entity": "GOB.String",
     "level": "GOB.String",
@@ -79,7 +80,8 @@ def save_log(msg):
 
     # Create the log record
     record = Log(
-        timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S'),
+        timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'),
+        process_id=msg.get('process_id', None),
         source=msg.get('source', None),
         entity=msg.get('entity', None),
         level=msg.get('level', None),
