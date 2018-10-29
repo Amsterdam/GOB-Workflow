@@ -1,7 +1,6 @@
 version: '3'
 
 services:
-
   workflow_service:
     build: src
     container_name: workflow_service
@@ -13,29 +12,9 @@ services:
     volumes:
       - gob-volume:/app/shared
 
-  rabbitmq:
-    image: "rabbitmq:3-management"
-    container_name: rabbitmq
-    ports:
-    - "15672:15672"
-    - "5672:5672"
-
-  management_database:
-    image: amsterdam/postgres
-    ports:
-    - "5407:5432"
-    container_name: management_database
-    environment:
-      POSTGRES_PASSWORD: insecure
-      POSTGRES_DB: gob_management
-      POSTGRES_USER: gob
-    volumes:
-    - "~/.ssh/datapunt.key:/root/.ssh/datapunt.key"
-
 volumes:
   gob-volume:
     external: true
-
 
 networks:
   default:
