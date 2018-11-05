@@ -7,11 +7,12 @@ Workflow messages consist of proposals. A proposal is evaluated (for now always 
 to the service that can handle the proposal.
 
 """
-from gobcore.message_broker.config import LOG_EXCHANGE, WORKFLOW_EXCHANGE
+from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBEAT_QUEUE, WORKFLOW_EXCHANGE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 from gobcore.log import get_logger
 
 from gobworkflow.storage import connect, save_log
+from gobworkflow.heartbeats import on_heartbeat
 
 
 logger = get_logger(name="WORKFLOW")
@@ -64,7 +65,13 @@ SERVICEDEFINITION = {
         'key': '#',
         'handler': save_log,
     },
+    'heartbeat_monitor': {
+        'exchange': STATUS_EXCHANGE,
+        'queue': HEARTBEAT_QUEUE,
+        'key': 'HEARTBEAT',
+        'handler': on_heartbeat,
+    },
 }
 
 connect()
-messagedriven_service(SERVICEDEFINITION)
+messagedriven_service(SERVICEDEFINITION, "Workflow")
