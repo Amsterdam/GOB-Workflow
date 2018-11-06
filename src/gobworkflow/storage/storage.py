@@ -132,9 +132,12 @@ def save_log(msg):
         timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'),
         process_id=msg.get('process_id', None),
         source=msg.get('source', None),
+        destination=msg.get('destination', None),
+        catalogue=msg.get('catalogue', None),
         entity=msg.get('entity', None),
         level=msg.get('level', None),
         name=msg.get('name', None),
+        id=msg.get('id', None),
         msg=msg.get('msg', None),
         data=json_data,
     )
