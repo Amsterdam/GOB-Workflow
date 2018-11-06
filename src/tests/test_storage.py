@@ -1,7 +1,10 @@
-from unittest import TestCase
+from unittest import TestCase, mock
+
+import argparse
+import getpass
 
 import gobworkflow.storage
-from gobworkflow.storage.storage import update_service, _update_tasks
+from gobworkflow.storage.storage import update_service, _update_tasks, drop_tables
 
 class MockedService:
 
@@ -38,6 +41,11 @@ class MockedSession:
 
     def commit(self):
         pass
+
+class MockedEngine:
+
+    def execute(self, stmt):
+        self.stmt = stmt
 
 class TestStorage(TestCase):
 
@@ -92,3 +100,14 @@ class TestStorage(TestCase):
         # update task
         _update_tasks(current_tasks=[mocked_task], tasks=[{"name": "AnyTask", "is_alive": True}])
         self.assertEqual(mocked_task.is_alive, True)
+
+    def test_drop_tables(self):
+        gobworkflow.storage.storage.engine = MockedEngine()
+        drop_tables()
+
+    @mock.patch('getpass.getpass',
+                return_value="no")
+    @mock.patch('argparse.ArgumentParser.parse_args',
+                return_value=argparse.Namespace(kwarg1="1", kwarg2="2"))
+    def test_main(self, mocked_parser, mocked_getpass):
+        from gobworkflow.storage import __main__
