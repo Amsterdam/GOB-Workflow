@@ -30,8 +30,11 @@ LOG_MODEL = {
     "timestamp": "GOB.DateTime",
     "process_id": "GOB.String",
     "source": "GOB.String",
+    "destination": "GOB.String",
+    "catalogue": "GOB.String",
     "entity": "GOB.String",
     "level": "GOB.String",
+    "id": "GOB.String",
     "name": "GOB.String",
     "msg": "GOB.String",
     "data": "GOB.JSON",
@@ -105,6 +108,17 @@ def connect():
     ServiceTask = Base.classes.service_tasks
 
     session = Session(engine)
+
+
+def drop_tables():
+    global engine, Base
+
+    for table in [LOG_TABLE, SERVICE_TABLE, SERVICE_TASK_TABLE]:
+        statement = f"DROP TABLE IF EXISTS {table} CASCADE"
+        engine.execute(statement)
+
+    # Update the reflected base
+    Base = automap_base()
 
 
 def save_log(msg):
