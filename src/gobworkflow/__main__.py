@@ -26,9 +26,11 @@ def pass_through(msg, type):
         log_msg = "Update proposal accepted"
 
     extra_log_kwargs = {
-        'process_id': msg['header']['process_id'],
-        'source': msg['header']['source'],
-        'entity': msg['header']['entity']
+        'process_id': msg['header'].get('process_id', None),
+        'source': msg['header'].get('source', None),
+        'destination': msg['header'].get('destination', None),
+        'catalogue': msg['header'].get('catalogue', None),
+        'entity': msg['header'].get('entity', None)
     }
 
     logger.info(log_msg, extra=extra_log_kwargs)
