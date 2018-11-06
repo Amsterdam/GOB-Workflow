@@ -19,6 +19,7 @@ logger = get_logger(name="WORKFLOW")
 
 
 def pass_through(msg, type):
+    log_msg = ""
     if type == 'import':
         log_msg = "Import proposal accepted"
     elif type == 'update':
