@@ -1,7 +1,7 @@
-from unittest import TestCase, mock
+from unittest import TestCase
 
 import gobworkflow.storage
-from gobworkflow.storage import update_service, _update_tasks
+from gobworkflow.storage.storage import update_service, _update_tasks
 
 class MockedService:
 
@@ -43,9 +43,9 @@ class TestStorage(TestCase):
 
     def test_update_service(self):
         mockedSession = MockedSession()
-        gobworkflow.storage.session = mockedSession
-        gobworkflow.storage.Service = MockedService
-        gobworkflow.storage.ServiceTask = MockedService
+        gobworkflow.storage.storage.session = mockedSession
+        gobworkflow.storage.storage.Service = MockedService
+        gobworkflow.storage.storage.ServiceTask = MockedService
 
         service = {
             "name": "AnyService",
@@ -64,30 +64,30 @@ class TestStorage(TestCase):
         self.assertEqual(mockedSession._first.is_alive, service["is_alive"])
 
     def test_update_tasks(self):
-        gobworkflow.storage.Service = MockedService
-        gobworkflow.storage.ServiceTask = MockedService
+        gobworkflow.storage.storage.Service = MockedService
+        gobworkflow.storage.storage.ServiceTask = MockedService
 
         mockedSession = MockedSession()
-        gobworkflow.storage.session = mockedSession
+        gobworkflow.storage.storage.session = mockedSession
         # No action on empty lists
         _update_tasks(current_tasks=[], tasks=[])
         self.assertEqual(mockedSession._add, None)
         self.assertEqual(mockedSession._delete, None)
 
         mockedSession = MockedSession()
-        gobworkflow.storage.session = mockedSession
+        gobworkflow.storage.storage.session = mockedSession
         # add task when not yet exists
         _update_tasks(current_tasks=[], tasks=[{"name": "AnyTask"}])
         self.assertEqual(mockedSession._add.name, "AnyTask")
 
         mockedSession = MockedSession()
-        gobworkflow.storage.session = mockedSession
+        gobworkflow.storage.storage.session = mockedSession
         # delete task when it no longer exists
         _update_tasks(current_tasks=[MockedService(**{"name": "AnyTask"})], tasks=[])
         self.assertEqual(mockedSession._delete.name, "AnyTask")
 
         mockedSession = MockedSession()
-        gobworkflow.storage.session = mockedSession
+        gobworkflow.storage.storage.session = mockedSession
         mocked_task = MockedService(**{"name": "AnyTask", "is_alive": None})
         # update task
         _update_tasks(current_tasks=[mocked_task], tasks=[{"name": "AnyTask", "is_alive": True}])

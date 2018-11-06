@@ -13,7 +13,7 @@ class TestMain(TestCase):
 
     @mock.patch('gobcore.message_broker.messagedriven_service.messagedriven_service')
     @mock.patch('gobcore.log.get_logger')
-    @mock.patch('gobworkflow.storage.connect')
+    @mock.patch('gobworkflow.storage.storage.connect')
     def test_main(self, connect, get_logger, messagedriven_service):
 
         from gobworkflow import __main__

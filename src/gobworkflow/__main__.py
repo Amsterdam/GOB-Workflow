@@ -11,7 +11,7 @@ from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 from gobcore.log import get_logger
 
-from gobworkflow.storage import connect, save_log
+from gobworkflow.storage.storage import connect, save_log
 from gobworkflow.heartbeats import on_heartbeat
 
 

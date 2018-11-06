@@ -14,7 +14,7 @@ If the status has changed the change is written to the storage
 import datetime
 
 from gobcore.status.heartbeat import HEARTBEAT_INTERVAL
-from gobworkflow.storage import update_service
+from gobworkflow.storage.storage import update_service
 
 _ISOFORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 _SERVICE = {}
