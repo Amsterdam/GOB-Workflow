@@ -7,6 +7,11 @@ and is responsable for routing received messages according to the defined workfl
 - subscribe to log messages and store the messages in the management database
 - subscribe to workflow messages, inspect the message and route it further
 
+# Infrastructure
+
+A running [GOB infrastructure](https://github.com/Amsterdam/GOB-Infra)
+is required to run this component.
+
 # Docker
 
 ## Requirements
@@ -17,7 +22,15 @@ and is responsable for routing received messages according to the defined workfl
 ## Run
 
 ```bash
+docker-compose build
 docker-compose up &
+```
+
+## Tests
+
+```bash
+docker-compose -f src/.jenkins/test/docker-compose.yml build
+docker-compose -f src/.jenkins/test/docker-compose.yml run test
 ```
 
 # Local
@@ -42,15 +55,14 @@ Or activate the previously created virtual environment
 source venv/bin/activate
 ```
     
-## Run
+# Run
 
-Start the client:
+Start the service:
 
 ```bash
 cd src
 python -m gobworkflow
-```
-   
+
 ## Tests
 
 Run the tests:

@@ -6,10 +6,8 @@ set -e # stop on any error
 echo "Running style checks"
 flake8
 
-# No testable code present.
-
 echo "Running unit tests"
-# pytest tests/
+pytest tests/
 
 echo "Running coverage tests"
-#pytest --cov=gobworkflow --cov-report html --cov-fail-under=70
+pytest tests/ --cov=gobworkflow --cov-report html --cov-fail-under=81

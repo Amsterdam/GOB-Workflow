@@ -7,26 +7,30 @@ Workflow messages consist of proposals. A proposal is evaluated (for now always 
 to the service that can handle the proposal.
 
 """
-from gobcore.message_broker.config import LOG_EXCHANGE, WORKFLOW_EXCHANGE
+from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBEAT_QUEUE, WORKFLOW_EXCHANGE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 from gobcore.log import get_logger
 
-from gobworkflow.storage import connect, save_log
+from gobworkflow.storage.storage import connect, save_log
+from gobworkflow.heartbeats import on_heartbeat
 
 
 logger = get_logger(name="WORKFLOW")
 
 
 def pass_through(msg, type):
+    log_msg = ""
     if type == 'import':
         log_msg = "Import proposal accepted"
     elif type == 'update':
         log_msg = "Update proposal accepted"
 
     extra_log_kwargs = {
-        'process_id': msg['header']['process_id'],
-        'source': msg['header']['source'],
-        'entity': msg['header']['entity']
+        'process_id': msg['header'].get('process_id', None),
+        'source': msg['header'].get('source', None),
+        'destination': msg['header'].get('destination', None),
+        'catalogue': msg['header'].get('catalogue', None),
+        'entity': msg['header'].get('entity', None)
     }
 
     logger.info(log_msg, extra=extra_log_kwargs)
@@ -64,7 +68,13 @@ SERVICEDEFINITION = {
         'key': '#',
         'handler': save_log,
     },
+    'heartbeat_monitor': {
+        'exchange': STATUS_EXCHANGE,
+        'queue': HEARTBEAT_QUEUE,
+        'key': 'HEARTBEAT',
+        'handler': on_heartbeat,
+    },
 }
 
 connect()
-messagedriven_service(SERVICEDEFINITION)
+messagedriven_service(SERVICEDEFINITION, "Workflow")
