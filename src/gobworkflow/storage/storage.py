@@ -5,83 +5,20 @@ This module encapsulates the GOB Management storage.
 import datetime
 import json
 
-from sqlalchemy import create_engine, MetaData, Table
+import alembic.config
+
+from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.automap import automap_base
 
-from gobcore.typesystem import get_gob_type
 from gobcore.typesystem.json import GobTypeJSONEncoder
+
+from gobcore.model.sa.management import Base, Log, Service, ServiceTask
 
 from gobworkflow.config import GOB_MGMT_DB
 
-# Ths session and Base will be initialised by the _init() method
-# The _init() method is called at the end of this module
 session = None
-Base = automap_base()
-Log = None
-Service = None
-ServiceTask = None
 engine = None
-
-LOG_TABLE = 'logs'
-LOG_MODEL = {
-    "logid": "GOB.PKInteger",   # Unique identification of the event, numbered sequentially
-    "timestamp": "GOB.DateTime",
-    "process_id": "GOB.String",
-    "source": "GOB.String",
-    "destination": "GOB.String",
-    "catalogue": "GOB.String",
-    "entity": "GOB.String",
-    "level": "GOB.String",
-    "id": "GOB.String",
-    "name": "GOB.String",
-    "msg": "GOB.String",
-    "data": "GOB.JSON",
-}
-
-SERVICE_TABLE = 'services'
-SERVICE_MODEL = {
-    "id": "GOB.PKInteger",
-    "name": "GOB.String",
-    "is_alive": "GOB.Boolean",
-    "timestamp": "GOB.DateTime"
-}
-
-SERVICE_TASK_TABLE = "service_tasks"
-SERVICE_TASK_MODEL = {
-    "id": "GOB.PKInteger",
-    "service_name": "GOB.String",
-    "name": "GOB.String",
-    "is_alive": "GOB.Boolean"
-}
-
-
-def get_column(column):
-    """Get the SQLAlchemy columndefinition for the gob type as exposed by the gob_type"""
-    (column_name, gob_type_name) = column
-
-    gob_type = get_gob_type(gob_type_name)
-    return gob_type.get_column_definition(column_name)
-
-
-def _create_tables(engine):
-    """Create tables
-
-    Creates tables for log, service and service tasks
-    Only creates when it does not yet exist
-
-    :param engine:
-    :return: None
-    """
-    meta = MetaData(engine)
-    for entity_model, entity_table in ((LOG_MODEL, LOG_TABLE),
-                                       (SERVICE_MODEL, SERVICE_TABLE),
-                                       (SERVICE_TASK_MODEL, SERVICE_TASK_TABLE)):
-        print("Create", entity_model, entity_table)
-        columns = [get_column(column) for column in entity_model.items()]
-        table = Table(entity_table, meta, *columns, extend_existing=True)
-        table.create(engine, checkfirst=True)
 
 
 def connect():
@@ -93,37 +30,25 @@ def connect():
 
     :return:
     """
-    global session, Base, engine, Log, Service, ServiceTask
+    global session, engine
+
+    # Database migrations are handled by alembic
+    # alembic upgrade head
+    alembicArgs = [
+        '--raiseerr',
+        'upgrade', 'head',
+    ]
+    alembic.config.main(argv=alembicArgs)
 
     engine = create_engine(URL(**GOB_MGMT_DB))
 
-    _create_tables(engine)
-
-    # Reflect the database to generate classes for ORM
-    Base.prepare(engine, reflect=True)
-
-    # Get the corresponding classes
-    Log = Base.classes.logs
-    Service = Base.classes.services
-    ServiceTask = Base.classes.service_tasks
+    # Declarative base model to create database tables and classes
+    Base.metadata.bind = engine
 
     session = Session(engine)
 
 
-def drop_tables():
-    global engine, Base
-
-    for table in [LOG_TABLE, SERVICE_TABLE, SERVICE_TASK_TABLE]:
-        statement = f"DROP TABLE IF EXISTS {table} CASCADE"
-        engine.execute(statement)
-
-    # Update the reflected base
-    Base = automap_base()
-
-
 def save_log(msg):
-    global Log, session
-
     # Encode the json data
     json_data = json.dumps(msg.get('data', None), cls=GobTypeJSONEncoder)
 
@@ -137,7 +62,7 @@ def save_log(msg):
         entity=msg.get('entity', None),
         level=msg.get('level', None),
         name=msg.get('name', None),
-        id=msg.get('id', None),
+        msgid=msg.get('id', None),
         msg=msg.get('msg', None),
         data=json_data,
     )
@@ -152,8 +77,6 @@ def update_service(service, tasks):
     :param tasks:
     :return: None
     """
-    global Service, ServiceTask, session
-
     # Get the current service or create it if not yet exists
     current = session.query(Service).filter_by(name=service["name"]).first()
     if current:
