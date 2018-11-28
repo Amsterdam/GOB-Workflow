@@ -51,7 +51,7 @@ class TestStart(TestCase):
 
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch('gobcore.message_broker.publish')
+    @mock.patch('gobworkflow.start.__main__.publish')
     @mock.patch('argparse.ArgumentParser')
     def test_WorkflowCommands_import(self, mock_argparse, mock_publish):
         mock_argparse.return_value = MockArgumentParser()
@@ -62,7 +62,7 @@ class TestStart(TestCase):
 
         mock_publish.asset_called_with(IMPORT_QUEUE, "import.start", {"dataset_file": "dataset_file"})
 
-    @mock.patch('gobcore.message_broker.publish')
+    @mock.patch('gobworkflow.start.__main__.publish')
     @mock.patch('argparse.ArgumentParser')
     def test_WorkflowCommands_export(self, mock_argparse, mock_publish):
         mock_argparse.return_value = MockArgumentParser()
@@ -83,7 +83,7 @@ class TestStart(TestCase):
 
         mock_publish.asset_called_with(EXPORT_QUEUE, "export.start", export_args)
 
-    @mock.patch('gobcore.message_broker.publish')
+    @mock.patch('gobworkflow.start.__main__.publish')
     @mock.patch('argparse.ArgumentParser')
     def test_WorkflowCommands_relate(self, mock_argparse, mock_publish):
         mock_argparse.return_value = MockArgumentParser()
