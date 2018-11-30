@@ -15,4 +15,8 @@ RUN rm requirements.txt
 # Copy gobworkflow module
 COPY gobworkflow gobworkflow
 
+# Copy alembic config
+COPY alembic alembic
+COPY alembic.ini alembic.ini
+
 CMD ["python3", "-m", "gobworkflow"]
