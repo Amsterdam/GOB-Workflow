@@ -57,6 +57,7 @@ def save_log(msg):
         timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'),
         process_id=msg.get('process_id', None),
         source=msg.get('source', None),
+        application=msg.get('application', None),
         destination=msg.get('destination', None),
         catalogue=msg.get('catalogue', None),
         entity=msg.get('entity', None),
