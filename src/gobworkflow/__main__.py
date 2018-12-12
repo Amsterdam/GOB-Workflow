@@ -28,6 +28,7 @@ def pass_through(msg, type):
     extra_log_kwargs = {
         'process_id': msg['header'].get('process_id', None),
         'source': msg['header'].get('source', None),
+        'application': msg['header'].get('application', None),
         'destination': msg['header'].get('destination', None),
         'catalogue': msg['header'].get('catalogue', None),
         'entity': msg['header'].get('entity', None)
