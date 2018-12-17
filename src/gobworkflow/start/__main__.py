@@ -57,10 +57,7 @@ The GOB workflow commands are:
                             help='the name of the data catalog (example: "meetbouten"')
         parser.add_argument('collection',
                             type=str,
-                            help='the name of the data collection (example: "meetbouten"')
-        parser.add_argument('filename',
-                            type=str,
-                            help='the name of the file to write the output to (example: "MBT_MEETBOUT.dat")')
+                            help='the name of the data collection (example: "metingen"')
         parser.add_argument('destination',
                             nargs='?',
                             type=str,
@@ -72,10 +69,9 @@ The GOB workflow commands are:
         export_args = {
             "catalogue": args.catalogue,
             "collection": args.collection,
-            "filename": args.filename,
             "destination": args.destination
         }
-        print(f"Trigger export of {args.catalogue}.{args.collection} to {args.filename} on {args.destination}")
+        print(f"Trigger export of {args.catalogue}.{args.collection} on {args.destination}")
         publish(EXPORT_QUEUE, "export.start", export_args)
 
     def relate_command(self):
