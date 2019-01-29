@@ -10,4 +10,5 @@ echo "Running unit tests"
 pytest tests/
 
 echo "Running coverage tests"
-pytest tests/ --cov=gobworkflow --cov-report html --cov-fail-under=90
+
+pytest tests/ --cov=gobworkflow --cov-report html --cov-fail-under=93
