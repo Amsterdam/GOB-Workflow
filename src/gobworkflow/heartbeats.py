@@ -14,11 +14,10 @@ If the status has changed the change is written to the storage
 import datetime
 
 from gobcore.status.heartbeat import HEARTBEAT_INTERVAL
-from gobworkflow.storage.storage import update_service
+from gobworkflow.storage.storage import update_service, remove_service, get_services, mark_service_dead
 
-_ISOFORMAT = "%Y-%m-%dT%H:%M:%S.%f"
-_SERVICE = {}
-_TASKS = {}
+# Remove a service after not having received anything for SERVICE_REMOVAL_TIMEOUT seconds
+_SERVICE_REMOVAL_TIMEOUT = HEARTBEAT_INTERVAL * 60
 
 
 def on_heartbeat(msg):
@@ -35,6 +34,8 @@ def on_heartbeat(msg):
 
     service = {
         "name": service_name,
+        "host": msg.get("host"),
+        "pid": msg.get("pid"),
         "is_alive": msg["is_alive"],
         "timestamp": msg["timestamp"]
     }
@@ -44,10 +45,6 @@ def on_heartbeat(msg):
         "name": thread["name"],
         "is_alive": thread["is_alive"]
     } for thread in msg["threads"]] if service["is_alive"] else []
-
-    # Register in memory
-    _SERVICE[service_name] = service
-    _TASKS[service_name] = service_tasks
 
     # Update in storage
     update_service(service, service_tasks)
@@ -63,15 +60,14 @@ def check_services():
 
     :return: None
     """
-    now = datetime.datetime.now()
-    for service_name, service in _SERVICE.items():
+    now = datetime.datetime.utcnow()
+    for service in get_services():
         # Only check services that are currently marked as alive
-        if service["is_alive"]:
-            last_heartbeat = datetime.datetime.strptime(service["timestamp"], _ISOFORMAT)
-            time_ago = now - last_heartbeat
-            if time_ago.total_seconds() > HEARTBEAT_INTERVAL:
-                # Heartbeat timeout, register as dead
-                service["is_alive"] = False
-                _TASKS[service_name] = []
-                # Update in storage
-                update_service(service, [])
+        last_heartbeat = service.timestamp
+        time_ago = now - last_heartbeat
+        if time_ago.total_seconds() > _SERVICE_REMOVAL_TIMEOUT:
+            # Final timeout reached, remove the service
+            remove_service(service)
+        elif time_ago.total_seconds() > HEARTBEAT_INTERVAL:
+            # Heartbeat timeout, register as dead
+            mark_service_dead(service)
