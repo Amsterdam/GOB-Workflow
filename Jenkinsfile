@@ -34,13 +34,11 @@ node {
 
     stage("Build image") {
         tryStep "build", {
-            docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                def image = docker.build("datapunt/gob_workflow:${env.BUILD_NUMBER}",
-                    "--shm-size 1G " +
-                    "--build-arg BUILD_ENV=acc" +
-                    " src")
-                image.push()
-            }
+            def image = docker.build("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}",
+                "--shm-size 1G " +
+                "--build-arg BUILD_ENV=acc" +
+                " src")
+            image.push()
         }
     }
 }
@@ -54,11 +52,9 @@ if (BRANCH == "develop") {
     node {
         stage('Push develop image') {
             tryStep "image tagging", {
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                    def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                   image.pull()
-                   image.push("develop")
-                }
+                def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
+                image.pull()
+                image.push("develop")
             }
         }
     }
@@ -70,11 +66,9 @@ if (BRANCH == "master") {
     node {
         stage('Push acceptance image') {
             tryStep "image tagging", {
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                    def image = docker.image("datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                    image.pull()
-                    image.push("acceptance")
-                }
+                def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
+                image.pull()
+                image.push("acceptance")
             }
         }
     }
@@ -99,12 +93,10 @@ if (BRANCH == "master") {
     node {
         stage('Push production image') {
             tryStep "image tagging", {
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                    def image = docker.build("datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                    image.pull()
-                    image.push("production")
-                    image.push("latest")
-                }
+                def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
+                image.pull()
+                image.push("production")
+                image.push("latest")
             }
         }
     }
@@ -113,10 +105,10 @@ if (BRANCH == "master") {
         stage("Deploy") {
             tryStep "deployment", {
                 build job: 'Subtask_Openstack_Playbook',
-                parameters: [
-                    [$class: 'StringParameterValue', name: 'INVENTORY', value: 'production'],
-                    [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
-                ]
+                    parameters: [
+                        [$class: 'StringParameterValue', name: 'INVENTORY', value: 'production'],
+                        [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
+                    ]
             }
         }
     }
