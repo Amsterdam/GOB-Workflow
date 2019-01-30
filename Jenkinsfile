@@ -39,13 +39,6 @@ node {
                 "--build-arg BUILD_ENV=acc" +
                 " src")
             image.push()
-            docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                def image2 = docker.build("datapunt/gob_workflow:${env.BUILD_NUMBER}",
-                    "--shm-size 1G " +
-                    "--build-arg BUILD_ENV=acc" +
-                    " src")
-                image2.push()
-            }
         }
     }
 }
@@ -62,11 +55,6 @@ if (BRANCH == "develop") {
                 def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
                 image.pull()
                 image.push("develop")
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                   def image2 = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                   image2.pull()
-                   image2.push("develop")
-                }
             }
         }
     }
@@ -81,11 +69,6 @@ if (BRANCH == "master") {
                 def image = docker.image("build.datapunt.amsterdam.nl:5000/datapunt/gob_workflow:${env.BUILD_NUMBER}")
                 image.pull()
                 image.push("acceptance")
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                    def image2 = docker.image("datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                    image2.pull()
-                    image2.push("acceptance")
-                }
             }
         }
     }
@@ -114,12 +97,6 @@ if (BRANCH == "master") {
                 image.pull()
                 image.push("production")
                 image.push("latest")
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                    def image2 = docker.build("datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                    image2.pull()
-                    image2.push("production")
-                    image2.push("latest")
-                }
             }
         }
     }
