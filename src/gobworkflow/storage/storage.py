@@ -8,6 +8,7 @@ import json
 import alembic.config
 
 from sqlalchemy import create_engine, or_
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,7 @@ from gobcore.typesystem.json import GobTypeJSONEncoder
 from gobcore.model.sa.management import Base, Log, Service, ServiceTask
 
 from gobworkflow.config import GOB_MGMT_DB
+from gobworkflow.storage.auto_reconnect_wrapper import auto_reconnect_wrapper
 
 session = None
 engine = None
@@ -28,7 +30,7 @@ def connect():
     Meta information is available via the Base variale.
     Data retrieval is facilitated via the session object
 
-    :return:
+    :return: True when the connection has been established
     """
     global session, engine
 
@@ -38,16 +40,72 @@ def connect():
         '--raiseerr',
         'upgrade', 'head',
     ]
-    alembic.config.main(argv=alembicArgs)
 
-    engine = create_engine(URL(**GOB_MGMT_DB))
+    try:
+        alembic.config.main(argv=alembicArgs)
 
-    # Declarative base model to create database tables and classes
-    Base.metadata.bind = engine
+        engine = create_engine(URL(**GOB_MGMT_DB))
 
-    session = Session(engine)
+        # Declarative base model to create database tables and classes
+        Base.metadata.bind = engine
+
+        session = Session(engine)
+    except DBAPIError as e:
+        # Catch any connection errors
+        print(f"Connect failed: {str(e)}")
+        disconnect()  # Cleanup
+
+    return is_connected()
 
 
+def disconnect():
+    """Disconnect from the database
+
+    Cancel any running transactions and close the session and engine
+
+    :return: None
+    """
+    global engine, session
+
+    try:
+        if session is not None:
+            session.rollback()
+            session.close()
+        if engine is not None:
+            engine.dispose()
+    except DBAPIError as e:
+        # Catch any connection errors
+        print(f"Disconnect failed: {str(e)}")
+    finally:
+        engine = None
+        session = None
+
+
+def is_connected():
+    """Is connected
+
+    Tells whether the database connection is alive
+
+    A simple statement is executed to test if the database communication is OK
+
+    :return: True when the database connection is OK
+    """
+    if engine is None or session is None:
+        return False
+    else:
+        try:
+            session.execute("SELECT 1")
+            return True
+        except Exception:
+            return False
+
+
+# Create a wrapper to protect database functions against connection loss
+# Any failed operation will automatically be retried when the connection becomes available again
+session_auto_reconnect = auto_reconnect_wrapper(is_connected=is_connected, connect=connect, disconnect=disconnect)
+
+
+@session_auto_reconnect
 def save_log(msg):
     # Encode the json data
     json_data = json.dumps(msg.get('data', None), cls=GobTypeJSONEncoder)
@@ -71,6 +129,7 @@ def save_log(msg):
     session.commit()
 
 
+@session_auto_reconnect
 def get_services():
     """Get services
 
@@ -79,6 +138,7 @@ def get_services():
     return session.query(Service).all()
 
 
+@session_auto_reconnect
 def mark_service_dead(service):
     """Mark a service as not being alive anymore
 
@@ -93,6 +153,7 @@ def mark_service_dead(service):
     session.commit()
 
 
+@session_auto_reconnect
 def remove_service(service):
     """Remove a service
 
@@ -110,6 +171,7 @@ def remove_service(service):
     session.commit()
 
 
+@session_auto_reconnect
 def update_service(service, tasks):
     """Update service state in storage
 
@@ -139,6 +201,7 @@ def update_service(service, tasks):
     session.commit()
 
 
+@session_auto_reconnect
 def _update_tasks(service, tasks):
     """Update tasks
 
