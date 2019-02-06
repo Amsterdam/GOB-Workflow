@@ -1,6 +1,6 @@
 from unittest import TestCase, mock
 
-from gobworkflow.storage.auto_reconnect_wrapper import AutoReconnector, auto_reconnect_wrapper
+from gobworkflow.storage.auto_reconnect_wrapper import AutoReconnector, auto_reconnect_wrapper, TooManyReconnectsException
 
 def raise_exception():
     raise Exception("Exception")
@@ -15,6 +15,7 @@ def get_n_times_function(n, on_fail, on_success):
             return on_success()
     return n_times
 
+@mock.patch("gobworkflow.storage.auto_reconnect_wrapper.RECONNECT_INTERVAL", 0)
 class TestAutoReconnect(TestCase):
 
     def setUp(self):
@@ -48,7 +49,6 @@ class TestAutoReconnect(TestCase):
         mock_connect.assert_not_called()
         mock_disconnect.assert_not_called()
 
-    @mock.patch("gobworkflow.storage.auto_reconnect_wrapper.RECONNECT_INTERVAL", 0)
     def test_exec_fails(self):
         is_connected = lambda: False
         mock_connect = get_n_times_function(2, lambda: False, lambda: True)
@@ -66,6 +66,16 @@ class TestAutoReconnect(TestCase):
 
         with self.assertRaises(Exception):
             obj.exec(lambda: raise_exception())
+
+    def test_max_reconnects(self):
+        is_connected = lambda: False
+        mock_connect = lambda: False
+        mock_disconnect = mock.MagicMock()
+        obj = AutoReconnector(is_connected=is_connected, connect=mock_connect, disconnect=mock_disconnect)
+
+        with self.assertRaises(TooManyReconnectsException):
+            obj.exec(lambda: raise_exception())
+
 
 class TestAutoReconnectWrapper(TestCase):
 
