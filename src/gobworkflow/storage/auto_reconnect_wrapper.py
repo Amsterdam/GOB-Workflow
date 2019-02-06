@@ -13,6 +13,11 @@ import functools
 from time import sleep
 
 RECONNECT_INTERVAL = 60  # Duration in seconds to try to reconnect
+MAX_TRY_RECONNECT = 15  # Give up after MAX_TRY_RECONNECT times
+
+
+class TooManyReconnectsException(Exception):
+    pass
 
 
 class AutoReconnector:
@@ -30,7 +35,7 @@ class AutoReconnector:
         self.connect = connect
         self.disconnect = disconnect
 
-    def reconnect(self):
+    def reconnect(self, try_times=MAX_TRY_RECONNECT):
         """Reconnect
 
         First the connection is closed. This allows for cleanup the connection data and probably do some error recovery
@@ -41,13 +46,19 @@ class AutoReconnector:
 
         If re-establishment fails the whole reconnect procedure is retried
 
+        After MAX_TRY_RECONNECT consecutive failures a TooManyReconnectsException is raised
+
         :return:
         """
+
         self.disconnect()
-        print(f"Try to reconnect in {RECONNECT_INTERVAL} seconds...")
-        sleep(RECONNECT_INTERVAL)
         if not self.connect():
-            self.reconnect()  # Try again...
+            try_times -= 1
+            if try_times <= 0:
+                raise TooManyReconnectsException("Maximum number of reconnects retries reached")
+            print(f"Try to reconnect in {RECONNECT_INTERVAL} seconds...")
+            sleep(RECONNECT_INTERVAL)
+            self.reconnect(try_times)  # Try again...
 
     def exec(self, func, *args, **kwargs):
         """Execute a method and catch any connection problems
