@@ -35,7 +35,7 @@ def job_start(job_name, msg):
         "status": "started"
     }
     job = job_save(job_info)
-    # Start the job and register its id
+    # Store the job and register its id
     job_info["id"] = job.id
     # Enhance the message with the job id
     msg["jobid"] = job.id
@@ -54,7 +54,7 @@ def job_end(job_name, msg):
         return
     timestamp = _timestamp()
     job_info = {
-        "id": msg.get("jobid"),
+        "id": msg["jobid"],
         "end": timestamp,
         "status": "ended"
     }
@@ -70,7 +70,6 @@ def step_start(step_name, msg):
     :param step_name: The name of the step
     :return:
     """
-    print("Step start", step_name)
     timestamp = _timestamp()
     step_info = {
         "jobid": msg.get("jobid"),
@@ -80,7 +79,7 @@ def step_start(step_name, msg):
         "status": "started"
     }
     step = step_save(step_info)
-    # Start the step and register its id
+    # Store the step and register its id
     step_info["id"] = step.id
     # Enhance the message with the job id
     msg["stepid"] = step.id
@@ -93,7 +92,6 @@ def step_end(step_name, msg):
 
     Register its status and end time
     """
-    print("Step end", step_name)
     if not msg.get("stepid"):
         return
     timestamp = _timestamp()
