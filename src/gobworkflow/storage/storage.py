@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from gobcore.typesystem.json import GobTypeJSONEncoder
 
-from gobcore.model.sa.management import Base, Log, Service, ServiceTask
+from gobcore.model.sa.management import Base, Job, JobStep, Log, Service, ServiceTask
 
 from gobworkflow.config import GOB_MGMT_DB
 from gobworkflow.storage.auto_reconnect_wrapper import auto_reconnect_wrapper
@@ -235,3 +235,57 @@ def _update_tasks(service, tasks):
             matches[0].is_alive = task["is_alive"]
 
     # Commit is done by the caller
+
+
+@session_auto_reconnect
+def job_save(job_info):
+    """
+    Create Job using the information in job_info and store it
+    :param job_info: Job attributes
+    :return: Job instance
+    """
+    job = Job(**job_info)
+    session.add(job)
+    session.commit()
+    return job
+
+
+@session_auto_reconnect
+def job_update(job_info):
+    """
+    Update Job using the information in job_info
+    :param job_info: Job attributes
+    :return: Job instance
+    """
+    job = session.query(Job).get(job_info["id"])
+    for key, value in job_info.items():
+        setattr(job, key, value)
+    session.commit()
+    return job
+
+
+@session_auto_reconnect
+def step_save(step_info):
+    """
+    Create JobStep using the information in step_info and store it
+    :param step_info: JobStep attributes
+    :return: JobStep instance
+    """
+    step = JobStep(**step_info)
+    session.add(step)
+    session.commit()
+    return step
+
+
+@session_auto_reconnect
+def step_update(step_info):
+    """
+    Update JobStep using the information in step_info
+    :param step_info: JobStep attributes
+    :return: JobStep instance
+    """
+    step = session.query(JobStep).get(step_info["id"])
+    for key, value in step_info.items():
+        setattr(step, key, value)
+    session.commit()
+    return step
