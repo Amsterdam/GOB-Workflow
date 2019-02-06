@@ -25,7 +25,7 @@ class MockArgumentParser:
         pass
 
 
-@mock.path("gobworkflow.start.__main__.connect", mock.MagicMock())
+@mock.patch("gobworkflow.start.__main__.connect", mock.MagicMock())
 class TestStart(TestCase):
 
     def test_init(self):
