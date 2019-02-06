@@ -8,6 +8,7 @@ Requires one or more catalogs to build relations to:
 import argparse
 import sys
 
+from gobworkflow.storage.storage import connect
 from gobworkflow.workflow.workflow import Workflow
 from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE
 
@@ -87,6 +88,7 @@ The GOB workflow commands are:
 
 def init():
     if __name__ == '__main__':
+        connect()
         WorkflowCommands()
 
 

@@ -15,9 +15,8 @@ The result is interpreted by the rules of the workflow
 If a next step is found then this step is started
 If not, the workflow is ended
 """
-import datetime
-
 from gobworkflow.workflow.config import WORKFLOWS, START
+from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_end
 
 
 class Workflow():
@@ -45,7 +44,7 @@ class Workflow():
         :param msg: The parameters to the workflow
         :return:
         """
-        self._workflow_start(msg)
+        job_start(self._workflow_name, msg)
         self._function(self._step_name)(msg)
 
     def handle_result(self):
@@ -64,14 +63,14 @@ class Workflow():
             :param msg: The results of the step that was executed
             :return:
             """
-            self._step_end()  # On handle result the current step has ended
+            step_end(self._step_name, msg)  # On handle result the current step has ended
             next = [next for next in self._next_steps() if self._condition(next)(msg)]
             if next:
                 # Execute the first one that matches
                 self._function(next[0]["step"])(msg)
             else:
                 # No next => end of workflow reached
-                self._workflow_end(msg)
+                job_end(self._workflow_name, msg)
 
         return handle_msg
 
@@ -87,7 +86,7 @@ class Workflow():
             :param msg: Workflow step parameters
             :return:
             """
-            self._step_start(step_name)  # Explicit start of new step
+            step_start(step_name, msg)  # Explicit start of new step
             self._workflow[step_name].get("function", lambda _: None)(msg)
 
         return exec_step
@@ -108,77 +107,3 @@ class Workflow():
         :return:
         """
         return next.get("condition", lambda _: True)
-
-    def _timestamp(self):
-        """
-        Job and job steps are given UTC timestamps
-        :return: The current UTC date time
-        """
-        return datetime.datetime.utcnow()
-
-    def _workflow_start(self, msg):
-        """
-        Start a workflow
-
-        Assign a name and register the parameters, including the start time
-        :param msg: The workflow start parameters
-        :return:
-        """
-        timestamp = self._timestamp()
-        args = [str(val) for val in msg.values()]
-        job = {
-            "name": f"{self._workflow_name}.{'.'.join(args)}",
-            "type": self._workflow_name,
-            "args": args,
-            "start": timestamp,
-            "end": None,
-            "status": "started"
-        }
-        return job
-
-    def _workflow_end(self, msg):
-        """
-        End a workflow
-
-        Register the end time and the status
-        :param msg: The message that ended the workflow
-        :return:
-        """
-        timestamp = self._timestamp()
-        job = {
-            "id": msg.get("jobid"),
-            "end": timestamp,
-            "status": "ended"
-        }
-        return job
-
-    def _step_start(self, step_name):
-        """
-        Start a workflow step
-
-        Register its name, mark it as started and register the start time
-        :param step_name: The name of the step
-        :return:
-        """
-        timestamp = self._timestamp()
-        step = {
-            "name": step_name,
-            "start": timestamp,
-            "end": None,
-            "status": "started"
-        }
-        return step
-
-    def _step_end(self):
-        """
-        End a workflow step
-
-        Register its status and end time
-        """
-        timestamp = self._timestamp()
-        step = {
-            "name": self._step_name,
-            "end": timestamp,
-            "status": "ended"
-        }
-        return step

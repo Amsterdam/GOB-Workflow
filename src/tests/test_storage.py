@@ -2,10 +2,13 @@ from unittest import TestCase, mock
 
 from sqlalchemy.exc import DBAPIError
 
+from gobcore.model.sa.management import Job, JobStep
+
 import gobworkflow.storage
 
 from gobworkflow.storage.storage import connect, disconnect, is_connected
 from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, _update_tasks
+from gobworkflow.storage.storage import job_save, job_update, step_save, step_update
 
 class MockedService:
 
@@ -252,3 +255,32 @@ class TestStorage(TestCase):
         remove_service(mockedService)
 
         self.assertEqual(mockedSession._delete, None)
+
+    def test_job_save(self):
+        result = job_save({"name": "any name"})
+        self.assertIsInstance(result, Job)
+        self.assertEqual(result.name, "any name")
+
+    def test_job_update(self):
+        mockedSession = MockedSession()
+        gobworkflow.storage.storage.session = mockedSession
+        mockedSession.get = lambda id: Job()
+
+        result = job_update({"id": 123})
+        self.assertIsInstance(result, Job)
+        self.assertEqual(result.id, 123)
+
+    def test_step_save(self):
+        result = step_save({"name": "any name"})
+        self.assertIsInstance(result, JobStep)
+        self.assertEqual(result.name, "any name")
+
+    def test_step_update(self):
+        mockedSession = MockedSession()
+        gobworkflow.storage.storage.session = mockedSession
+        mockedSession.get = lambda id: JobStep()
+
+        result = step_update({"id": 123})
+        self.assertIsInstance(result, JobStep)
+        self.assertEqual(result.id, 123)
+
