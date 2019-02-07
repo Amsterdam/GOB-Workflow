@@ -14,7 +14,7 @@ from gobworkflow.storage.storage import connect, save_log
 from gobworkflow.workflow.workflow import Workflow
 from gobworkflow.heartbeats import on_heartbeat
 
-from gobworkflow.workflow.config import IMPORT, IMPORT_READ, IMPORT_COMPARE
+from gobworkflow.workflow.config import IMPORT, IMPORT_READ, IMPORT_COMPARE, IMPORT_UPLOAD
 
 
 SERVICEDEFINITION = {
@@ -29,6 +29,12 @@ SERVICEDEFINITION = {
         'queue': 'gob.workflow.proposal',
         'key': 'fullupdate.proposal',
         'handler': Workflow(IMPORT, IMPORT_COMPARE).handle_result()
+    },
+    'update_finished': {
+        'exchange': WORKFLOW_EXCHANGE,
+        'queue': 'gob.workflow.proposal',
+        'key': 'updatefinished.proposal',
+        'handler': Workflow(IMPORT, IMPORT_UPLOAD).handle_result()
     },
     'save_logs': {
         'exchange': LOG_EXCHANGE,

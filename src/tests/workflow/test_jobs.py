@@ -17,7 +17,7 @@ class TestJobManagement(TestCase):
     @mock.patch("gobworkflow.workflow.jobs.job_save")
     def test_job_start(self, job_save):
         job_save.return_value = Job("any id")
-        job = job_start("any job", {"a": 1, "b": "string", "c": True})
+        job = job_start("any job", {"header": {}, "a": 1, "b": "string", "c": True})
         self.assertEqual(job["name"], "any job.1.string.True")
         self.assertEqual(job["type"], "any job")
         self.assertEqual(job["args"], ["1", "string", "True"])
@@ -27,14 +27,14 @@ class TestJobManagement(TestCase):
 
     @mock.patch("gobworkflow.workflow.jobs.job_update", mock.MagicMock())
     def test_job_end(self):
-        job = job_end("any job", {"jobid": "any jobid"})
+        job = job_end({"jobid": "any jobid"})
         self.assertEqual(job["id"], "any jobid")
         self.assertIsInstance(job["end"], datetime.datetime)
         self.assertEqual(job["status"], "ended")
 
     @mock.patch("gobworkflow.workflow.jobs.job_update", mock.MagicMock())
     def test_job_end_missing_id(self):
-        job = job_end("any job", {})
+        job = job_end({})
         self.assertIsNone(job)
 
     @mock.patch("gobworkflow.workflow.jobs.step_save")
@@ -48,12 +48,11 @@ class TestJobManagement(TestCase):
 
     @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
     def test_step_end(self):
-        step = step_end("any step", {"stepid": "any stepid"})
-        self.assertEqual(step["name"], "any step")
+        step = step_end({"stepid": "any stepid"})
         self.assertIsInstance(step["end"], datetime.datetime)
         self.assertEqual(step["status"], "ended")
 
     @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
     def test_step_end_missing_id(self):
-        step = step_end("any step", {})
+        step = step_end({})
         self.assertIsNone(step)

@@ -44,6 +44,8 @@ class Workflow():
         :param msg: The parameters to the workflow
         :return:
         """
+        if not msg.get("header"):
+            msg["header"] = {}
         job_start(self._workflow_name, msg)
         self._function(self._step_name)(msg)
 
@@ -63,14 +65,14 @@ class Workflow():
             :param msg: The results of the step that was executed
             :return:
             """
-            step_end(self._step_name, msg)  # On handle result the current step has ended
+            step_end(msg["header"])  # On handle result the current step has ended
             next = [next for next in self._next_steps() if self._condition(next)(msg)]
             if next:
                 # Execute the first one that matches
                 self._function(next[0]["step"])(msg)
             else:
                 # No next => end of workflow reached
-                job_end(self._workflow_name, msg)
+                job_end(msg["header"])
 
         return handle_msg
 
@@ -86,7 +88,7 @@ class Workflow():
             :param msg: Workflow step parameters
             :return:
             """
-            step_start(step_name, msg)  # Explicit start of new step
+            step_start(step_name, msg["header"])  # Explicit start of new step
             self._workflow[step_name].get("function", lambda _: None)(msg)
 
         return exec_step
