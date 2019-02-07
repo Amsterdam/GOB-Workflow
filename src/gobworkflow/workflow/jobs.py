@@ -25,7 +25,8 @@ def job_start(job_name, msg):
     :return:
     """
     timestamp = _timestamp()
-    args = [str(val) for val in msg.values()]
+    # Concatenate all the non-header fields
+    args = [str(val) for key, val in msg.items() if key != "header"]
     job_info = {
         "name": f"{job_name}.{'.'.join(args)}",
         "type": job_name,
@@ -37,24 +38,25 @@ def job_start(job_name, msg):
     job = job_save(job_info)
     # Store the job and register its id
     job_info["id"] = job.id
-    # Enhance the message with the job id
-    msg["jobid"] = job.id
+    # Enhance the message header with the job id
+    msg["header"]["jobid"] = job.id
     return job_info
 
 
-def job_end(job_name, msg):
+def job_end(header):
     """
     End a job
 
     Register the end time and the status
-    :param msg: The message that ended the job
+    :param header: The header of the message that ended the job
     :return:
     """
-    if not msg.get("jobid"):
+    id = header.get("jobid")
+    if id is None:
         return
     timestamp = _timestamp()
     job_info = {
-        "id": msg["jobid"],
+        "id": id,
         "end": timestamp,
         "status": "ended"
     }
@@ -62,17 +64,18 @@ def job_end(job_name, msg):
     return job_info
 
 
-def step_start(step_name, msg):
+def step_start(step_name, header):
     """
     Start a job step
 
     Register its name, mark it as started and register the start time
     :param step_name: The name of the step
+    :param header: The header of the message that started the step
     :return:
     """
     timestamp = _timestamp()
     step_info = {
-        "jobid": msg.get("jobid"),
+        "jobid": header.get("jobid"),
         "name": step_name,
         "start": timestamp,
         "end": None,
@@ -82,22 +85,23 @@ def step_start(step_name, msg):
     # Store the step and register its id
     step_info["id"] = step.id
     # Enhance the message with the job id
-    msg["stepid"] = step.id
+    header["stepid"] = step.id
     return step_info
 
 
-def step_end(step_name, msg):
+def step_end(header):
     """
     End a job step
 
     Register its status and end time
+    :param header: The header of the message that ended the step
     """
-    if not msg.get("stepid"):
+    id = header.get("stepid")
+    if id is None:
         return
     timestamp = _timestamp()
     step_info = {
-        "id": msg["stepid"],
-        "name": step_name,
+        "id": id,
         "end": timestamp,
         "status": "ended"
     }

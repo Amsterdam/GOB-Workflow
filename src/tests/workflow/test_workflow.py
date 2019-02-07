@@ -52,15 +52,15 @@ class TestWorkflow(TestCase):
     def test_start(self, job_start, step_start):
         self.workflow.start({})
 
-        WORKFLOWS["Workflow"]["Step"]["function"].assert_called_with({})
-        job_start.assert_called_with("Workflow", {})
+        WORKFLOWS["Workflow"]["Step"]["function"].assert_called_with({"header": {}})
+        job_start.assert_called_with("Workflow", {"header": {}})
         step_start.assert_called_with("Step", {})
 
     @mock.patch("gobworkflow.workflow.workflow.step_end")
     @mock.patch("gobworkflow.workflow.workflow.job_end")
     def test_handle_result_without_next(self, job_end, step_end):
         handler = self.workflow.handle_result()
-        handler({"condition": False})
+        handler({"header": {}, "condition": False})
 
         WORKFLOWS["Workflow"]["Next"]["function"].assert_not_called()
         job_end.assert_called()
@@ -70,9 +70,9 @@ class TestWorkflow(TestCase):
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     def test_handle_result_with_next(self, step_start, step_end):
         handler = self.workflow.handle_result()
-        handler({"condition": True})
+        handler({"header": {}, "condition": True})
 
-        WORKFLOWS["Workflow"]["Next"]["function"].assert_called_with({"condition": True})
+        WORKFLOWS["Workflow"]["Next"]["function"].assert_called_with({"header": {}, "condition": True})
         step_start.assert_called()
         step_end.assert_called()
 
@@ -80,8 +80,8 @@ class TestWorkflow(TestCase):
     @mock.patch("gobworkflow.workflow.workflow.step_start", mock.MagicMock())
     def test_handle_result_with_multiple_nexts(self):
         handler = self.workflow.handle_result()
-        handler({"next": True})
+        handler({"header": {}, "next": True})
 
         # Only execute the first matching next step
         WORKFLOWS["Workflow"]["Next"]["function"].assert_not_called()
-        WORKFLOWS["Workflow"]["OtherNext"]["function"].assert_called_with({"next": True})
+        WORKFLOWS["Workflow"]["OtherNext"]["function"].assert_called_with({"header": {}, "next": True})
