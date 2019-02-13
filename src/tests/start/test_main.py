@@ -1,7 +1,7 @@
 import argparse
 from unittest import TestCase, mock
 
-from gobcore.message_broker.config import EXPORT_QUEUE, IMPORT_QUEUE, REQUEST_QUEUE
+from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE
 
 from gobworkflow.start import __main__
 
@@ -25,8 +25,8 @@ class MockArgumentParser:
         pass
 
 
+@mock.patch("gobworkflow.start.__main__.connect", mock.MagicMock())
 class TestStart(TestCase):
-
 
     def test_init(self):
         with mock.patch.object(__main__, "WorkflowCommands", return_value=42):
@@ -51,45 +51,56 @@ class TestStart(TestCase):
 
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch('gobworkflow.start.__main__.publish')
+    @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_import(self, mock_argparse, mock_publish):
+    def test_WorkflowCommands_import(self, mock_argparse, mock_workflow):
+        mock_start_workflow = mock.MagicMock()
         mock_argparse.return_value = MockArgumentParser()
         MockArgumentParser.arguments['command'] = 'import'
-        MockArgumentParser.arguments['dataset_file'] = 'dataset_file'
+        MockArgumentParser.arguments['dataset_file'] = ['dataset_file']
 
         __main__.WorkflowCommands()
 
-        mock_publish.asset_called_with(IMPORT_QUEUE, "import.start", {"dataset_file": "dataset_file"})
+        mock_workflow.assert_called_with(IMPORT)
 
-    @mock.patch('gobworkflow.start.__main__.publish')
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with({'dataset_file': 'dataset_file'})
+
+    @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_export(self, mock_argparse, mock_publish):
+    def test_WorkflowCommands_export(self, mock_argparse, mock_workflow):
         mock_argparse.return_value = MockArgumentParser()
         MockArgumentParser.arguments['command'] = 'export'
         MockArgumentParser.arguments['catalogue'] = 'catalogue'
         MockArgumentParser.arguments['collection'] = 'collection'
-        MockArgumentParser.arguments['filename'] = 'filename'
         MockArgumentParser.arguments['destination'] = 'destination'
 
         export_args = {
             "catalogue": "catalogue",
             "collection": "collection",
-            "filename": "filename",
             "destination": "destination"
         }
 
         __main__.WorkflowCommands()
 
-        mock_publish.asset_called_with(EXPORT_QUEUE, "export.start", export_args)
+        mock_workflow.assert_called_with(EXPORT)
 
-    @mock.patch('gobworkflow.start.__main__.publish')
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with(export_args)
+
+    @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_relate(self, mock_argparse, mock_publish):
+    def test_WorkflowCommands_relate(self, mock_argparse, mock_workflow):
         mock_argparse.return_value = MockArgumentParser()
         MockArgumentParser.arguments['command'] = 'relate'
         MockArgumentParser.arguments['catalogue'] = 'catalogue'
 
         __main__.WorkflowCommands()
 
-        mock_publish.asset_called_with(REQUEST_QUEUE, "fullrelate.request", {"catalogue": "catalogue"})
+        mock_workflow.assert_called_with(RELATE)
+
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with({'catalogue': 'catalogue'})

@@ -11,4 +11,4 @@ pytest tests/
 
 echo "Running coverage tests"
 
-pytest tests/ --cov=gobworkflow --cov-report html --cov-fail-under=93
+pytest tests/ --cov=gobworkflow --cov-report html --cov-fail-under=100

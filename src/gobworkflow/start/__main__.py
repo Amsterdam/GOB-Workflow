@@ -8,8 +8,9 @@ Requires one or more catalogs to build relations to:
 import argparse
 import sys
 
-from gobcore.message_broker.config import EXPORT_QUEUE, IMPORT_QUEUE, REQUEST_QUEUE
-from gobcore.message_broker import publish
+from gobworkflow.storage.storage import connect
+from gobworkflow.workflow.workflow import Workflow
+from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE
 
 
 class WorkflowCommands():
@@ -48,7 +49,7 @@ The GOB workflow commands are:
         args = parser.parse_args(sys.argv[2:])
         for dataset_file in args.dataset_file:
             print(f"Trigger import of {dataset_file}")
-            publish(IMPORT_QUEUE, "import.start", {"dataset_file": dataset_file})
+            Workflow(IMPORT).start({"dataset_file": dataset_file})
 
     def export_command(self):
         parser = argparse.ArgumentParser(description='Start an export job for a collection')
@@ -72,7 +73,7 @@ The GOB workflow commands are:
             "destination": args.destination
         }
         print(f"Trigger export of {args.catalogue}.{args.collection} on {args.destination}")
-        publish(EXPORT_QUEUE, "export.start", export_args)
+        Workflow(EXPORT).start(export_args)
 
     def relate_command(self):
         parser = argparse.ArgumentParser(description='Build relations for a catalog')
@@ -82,11 +83,12 @@ The GOB workflow commands are:
         # Skip the first argument
         args = parser.parse_args(sys.argv[2:])
         print(f"Trigger build relations for {args.catalogue}")
-        publish(REQUEST_QUEUE, "fullrelate.request", {"catalogue": args.catalogue})
+        Workflow(RELATE).start({"catalogue": args.catalogue})
 
 
 def init():
     if __name__ == '__main__':
+        connect()
         WorkflowCommands()
 
 
