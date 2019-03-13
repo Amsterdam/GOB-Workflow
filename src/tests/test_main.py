@@ -11,4 +11,6 @@ class TestMain(TestCase):
         # Should connect to the storage
         connect.assert_called()
         # Should start as a service
-        messagedriven_service.assert_called_with(__main__.SERVICEDEFINITION, "Workflow")
+        messagedriven_service.assert_called_with(__main__.SERVICEDEFINITION,
+                                                 "Workflow",
+                                                 {'prefetch_count': 100, 'load_message': False})
