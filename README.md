@@ -62,6 +62,7 @@ Start the service:
 ```bash
 cd src
 python -m gobworkflow
+```
 
 ## Tests
 
