@@ -13,4 +13,4 @@ class TestMain(TestCase):
         # Should start as a service
         messagedriven_service.assert_called_with(__main__.SERVICEDEFINITION,
                                                  "Workflow",
-                                                 {'prefetch_count': 100, 'load_message': False})
+                                                 {'prefetch_count': 1, 'load_message': False})
