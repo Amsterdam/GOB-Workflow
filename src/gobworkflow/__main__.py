@@ -52,7 +52,7 @@ SERVICEDEFINITION = {
 
 connect()
 params = {
-    "prefetch_count": 100,
+    "prefetch_count": 1,
     "load_message": False
 }
 messagedriven_service(SERVICEDEFINITION, "Workflow", params)
