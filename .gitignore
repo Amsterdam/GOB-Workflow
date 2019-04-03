@@ -7,3 +7,9 @@
 .coverage
 .pytest_cache
 htmlcov
+
+# Local environment variables
+.env
+
+# Intellij directory
+.idea
