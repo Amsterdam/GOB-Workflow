@@ -1,7 +1,6 @@
-import argparse
 from unittest import TestCase, mock
 
-from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE
+from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE, IMPORT_PREPARE
 
 from gobworkflow.start import __main__
 
@@ -104,3 +103,33 @@ class TestStart(TestCase):
         instance = mock_workflow.return_value
         assert instance.start.call_count == 1
         instance.start.assert_called_with({'catalogue': 'catalogue'})
+
+    @mock.patch('gobworkflow.start.__main__.Workflow')
+    @mock.patch('argparse.ArgumentParser')
+    def test_WorkflowCommands_prepare(self, mock_argparse, mock_workflow):
+        mock_argparse.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['command'] = 'prepare'
+        MockArgumentParser.arguments['prepare_config'] = 'config.json'
+
+        __main__.WorkflowCommands()
+
+        mock_workflow.assert_called_with(IMPORT, IMPORT_PREPARE)
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with({'prepare_config': 'config.json'})
+
+
+    @mock.patch('gobworkflow.start.__main__.Workflow')
+    @mock.patch('argparse.ArgumentParser')
+    def test_WorkflowCommands_prepare_with_dataset(self, mock_argparse, mock_workflow):
+        mock_argparse.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['command'] = 'prepare'
+        MockArgumentParser.arguments['prepare_config'] = 'config.json'
+        MockArgumentParser.arguments['dataset'] = 'dataset.json'
+
+        __main__.WorkflowCommands()
+
+        mock_workflow.assert_called_with(IMPORT, IMPORT_PREPARE)
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with({'prepare_config': 'config.json', 'dataset_file': 'dataset.json'})

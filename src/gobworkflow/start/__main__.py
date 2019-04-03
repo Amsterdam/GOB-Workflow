@@ -10,7 +10,7 @@ import sys
 
 from gobworkflow.storage.storage import connect
 from gobworkflow.workflow.workflow import Workflow
-from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE
+from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE, IMPORT_PREPARE
 
 
 class WorkflowCommands():
@@ -26,6 +26,7 @@ The GOB workflow commands are:
    import       Start an import job for a collection
    export       Start an export job for a collection
    relate       Build relations for a catalog
+   prepare      Prepare a dataset for import
 ''')
         parser.add_argument('command', help='Subcommand to run')
         # parse_args defaults to [1:] for args, but you need to
@@ -38,6 +39,24 @@ The GOB workflow commands are:
             exit(1)
         # use dispatch pattern to invoke method with same name
         getattr(self, command)()
+
+    def prepare_command(self):
+        parser = argparse.ArgumentParser(description='Start a prepare job for a collection')
+        parser.add_argument('prepare_config',
+                            type=str,
+                            help='a file containing the prepare definition')
+        parser.add_argument('--dataset',
+                            type=str,
+                            help='a file containing the import definition')
+        # Skip the first argument
+        args = parser.parse_args(sys.argv[2:])
+        start_args = {
+            "prepare_config": args.prepare_config,
+        }
+        if hasattr(args, 'dataset') and args.dataset:
+            start_args['dataset_file'] = args.dataset
+        print(f"Trigger prepare of {args.prepare_config}")
+        Workflow(IMPORT, IMPORT_PREPARE).start(start_args)
 
     def import_command(self):
         parser = argparse.ArgumentParser(description='Start an import job for a collection')
