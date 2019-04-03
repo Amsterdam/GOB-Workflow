@@ -13,7 +13,7 @@ Each next step may define a condition that needs to be met in order to get eligi
 When one or more next steps match its condition, the first one will be executed
 If no next steps are defined on can be found the workflow is ended
 """
-from gobcore.message_broker.config import IMPORT_QUEUE, EXPORT_QUEUE, REQUEST_QUEUE
+from gobcore.message_broker.config import IMPORT_QUEUE, EXPORT_QUEUE, REQUEST_QUEUE, PREPARE_QUEUE
 from gobcore.message_broker import publish
 
 
@@ -24,6 +24,7 @@ IMPORT = "import"
 IMPORT_READ = "read"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
+IMPORT_PREPARE = "prepare"
 
 # The export workflow and steps
 EXPORT = "export"
@@ -37,6 +38,11 @@ RELATE_RELATE = "relate"
 WORKFLOWS = {
     IMPORT: {
         START: IMPORT_READ,
+        IMPORT_PREPARE: {
+            "function": lambda msg: publish(PREPARE_QUEUE, "prepare.start", msg),
+            "next": [
+            ]
+        },
         IMPORT_READ: {
             "function": lambda msg: publish(IMPORT_QUEUE, "import.start", msg),  # default: "function": lambda _: None
             "next": [  # default: "next": []
