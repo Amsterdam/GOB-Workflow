@@ -21,10 +21,10 @@ START = "start"  # workflow[START] is the name of the first step in a workflow
 
 # The import workflow and steps
 IMPORT = "import"
+IMPORT_PREPARE = "prepare"
 IMPORT_READ = "read"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
-IMPORT_PREPARE = "prepare"
 
 # The export workflow and steps
 EXPORT = "export"
@@ -33,6 +33,9 @@ EXPORT_GENERATE = "generate"
 # The relate workflow and steps
 RELATE = "relate"
 RELATE_RELATE = "relate"
+RELATE_COMPARE = "compare"
+RELATE_UPLOAD = "upload"
+
 
 # The GOB workflows
 WORKFLOWS = {
@@ -53,7 +56,7 @@ WORKFLOWS = {
             ],
         },
         IMPORT_COMPARE: {
-            "function": lambda msg: publish(REQUEST_QUEUE, 'fullimport.request', msg),
+            "function": lambda msg: publish(REQUEST_QUEUE, 'compare.start', msg),
             "next": [
                 {
                     "step": IMPORT_UPLOAD
@@ -61,7 +64,7 @@ WORKFLOWS = {
             ],
         },
         IMPORT_UPLOAD: {
-            "function": lambda msg: publish(REQUEST_QUEUE, 'fullupdate.request', msg)
+            "function": lambda msg: publish(REQUEST_QUEUE, 'fullupdate.start', msg)
         }
     },
     EXPORT: {
@@ -73,7 +76,23 @@ WORKFLOWS = {
     RELATE: {
         START: RELATE_RELATE,
         RELATE_RELATE: {
-            "function": lambda msg: publish(REQUEST_QUEUE, "fullrelate.request", msg)
+            "function": lambda msg: publish(REQUEST_QUEUE, "relate.start", msg),
+            "next": [
+                {
+                    "step": IMPORT_COMPARE
+                }
+            ]
+        },
+        RELATE_COMPARE: {
+            "function": lambda msg: publish(REQUEST_QUEUE, 'compare.start', msg),
+            "next": [
+                {
+                    "step": IMPORT_UPLOAD
+                }
+            ],
+        },
+        RELATE_UPLOAD: {
+            "function": lambda msg: publish(REQUEST_QUEUE, 'fullupdate.start', msg)
         }
     }
 }
