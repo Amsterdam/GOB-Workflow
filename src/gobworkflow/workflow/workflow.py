@@ -15,7 +15,9 @@ The result is interpreted by the rules of the workflow
 If a next step is found then this step is started
 If not, the workflow is ended
 """
-from gobworkflow.workflow.config import WORKFLOWS, START
+from gobcore.logging.logger import logger
+
+from gobworkflow.workflow.config import WORKFLOWS, START, DEFAULT_CONDITION
 from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_end
 
 
@@ -72,6 +74,8 @@ class Workflow():
                 self._function(next[0]["step"])(msg)
             else:
                 # No next => end of workflow reached
+                logger.configure(msg, "WORKFLOW")
+                logger.info(f"End of workflow")
                 job_end(msg["header"])
 
         return handle_msg
@@ -89,6 +93,9 @@ class Workflow():
             :return:
             """
             step_start(step_name, msg["header"])  # Explicit start of new step
+            # Clear any summary from the previous step
+            if msg.get('summary'):
+                del msg['summary']
             self._workflow[step_name].get("function", lambda _: None)(msg)
 
         return exec_step
@@ -108,4 +115,4 @@ class Workflow():
         :param next: A next step config
         :return:
         """
-        return next.get("condition", lambda _: True)
+        return next.get("condition", DEFAULT_CONDITION)
