@@ -41,6 +41,9 @@ class MockedSession:
     def query(self, anyClass):
         return self
 
+    def get(self, arg):
+        return arg
+
     def filter_by(self, *args, **kwargs):
         return self
 
@@ -285,6 +288,8 @@ class TestStorage(TestCase):
         self.assertEqual(result.id, 123)
 
     def test_get_job_step(self):
+        mockedSession = MockedSession()
+        gobworkflow.storage.storage.session = mockedSession
         job, step = get_job_step(1, 2)
-        self.assertEqual(job, None)
-        self.assertEqual(step, None)
+        self.assertEqual(job, 1)
+        self.assertEqual(step, 2)

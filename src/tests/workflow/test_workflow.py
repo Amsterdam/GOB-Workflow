@@ -56,6 +56,16 @@ class TestWorkflow(TestCase):
         job_start.assert_called_with("Workflow", {"header": {}})
         step_start.assert_called_with("Step", {})
 
+    @mock.patch("gobworkflow.workflow.workflow.step_start")
+    @mock.patch("gobworkflow.workflow.workflow.job_start")
+    def test_start_with_contents(self, job_start, step_start):
+        self.workflow.start({'summary': 'any summary', 'contents': []})
+
+        WORKFLOWS["Workflow"]["Step"]["function"].assert_called_with({"header": {}, 'contents': []})
+        job_start.assert_called_with("Workflow", {"header": {}, 'contents': []})
+        step_start.assert_called_with("Step", {})
+
+    @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_end")
     @mock.patch("gobworkflow.workflow.workflow.job_end")
     def test_handle_result_without_next(self, job_end, step_end):

@@ -10,6 +10,9 @@ class MockWorkflow:
     def handle_result(self):
         return self.handle_msg
 
+    def start(self, msg):
+        self.msg = msg
+
 class TestMain(TestCase):
 
     @mock.patch('gobcore.message_broker.messagedriven_service.messagedriven_service')
@@ -39,3 +42,12 @@ class TestMain(TestCase):
             }
         })
         self.assertEqual(workflow.msg, {'header': {'jobid': 'any jobid', 'stepid': 'any stepid'}})
+
+        __main__.start_workflow({
+            'workflow': {
+                'workflow_name': 'any workflow',
+                'step_name': 'any step'
+            },
+            'anything': 'any value'
+        })
+        self.assertEqual(workflow.msg, {'anything': 'any value'})
