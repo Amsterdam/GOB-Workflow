@@ -9,6 +9,10 @@ from gobcore.message_broker.config import REQUEST_QUEUE
 from gobcore.message_broker import publish
 
 
+# Special return value that a function can return to end the current workflow
+END_OF_WORKFLOW = "END_OF_WORKFLOW"
+
+
 def start_workflows(workflow_name, step_name, msg):
     """
     Start workflows at the given step with the specified message
@@ -28,6 +32,7 @@ def start_workflows(workflow_name, step_name, msg):
             'contents': content
         }
         start_workflow(workflow_name, step_name, new_msg)
+    return END_OF_WORKFLOW  # End current workflow when starting a new workflow
 
 
 def start_workflow(workflow_name, step_name, msg):
@@ -46,6 +51,7 @@ def start_workflow(workflow_name, step_name, msg):
     }
     # Post a message to start the specified workflow
     start_step("workflow", msg)
+    return END_OF_WORKFLOW  # End current workflow when starting a new workflow
 
 
 def start_step(key, msg):
