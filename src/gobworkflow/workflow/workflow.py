@@ -19,6 +19,7 @@ from gobcore.logging.logger import logger
 
 from gobworkflow.workflow.config import WORKFLOWS, START, DEFAULT_CONDITION
 from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_end
+from gobworkflow.workflow.start import END_OF_WORKFLOW
 
 
 class Workflow():
@@ -51,6 +52,11 @@ class Workflow():
         job_start(self._workflow_name, msg)
         self._function(self._step_name)(msg)
 
+    def _end_of_workflow(self, msg):
+        logger.configure(msg, "WORKFLOW")
+        logger.info(f"End of workflow")
+        job_end(msg["header"])
+
     def handle_result(self):
         """
         Get a handler that processes the result of a workflow step
@@ -74,9 +80,7 @@ class Workflow():
                 self._function(next[0]["step"])(msg)
             else:
                 # No next => end of workflow reached
-                logger.configure(msg, "WORKFLOW")
-                logger.info(f"End of workflow")
-                job_end(msg["header"])
+                self._end_of_workflow(msg)
 
         return handle_msg
 
@@ -94,9 +98,11 @@ class Workflow():
             """
             step_start(step_name, msg["header"])  # Explicit start of new step
             # Clear any summary from the previous step
-            if msg.get('summary'):
-                del msg['summary']
-            self._workflow[step_name].get("function", lambda _: None)(msg)
+            msg['summary'] = {}
+            result = self._workflow[step_name].get("function", lambda _: None)(msg)
+            if result == END_OF_WORKFLOW:
+                step_end(msg["header"])
+                self._end_of_workflow(msg)
 
         return exec_step
 
