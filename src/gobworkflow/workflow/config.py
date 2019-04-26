@@ -63,7 +63,7 @@ WORKFLOWS = {
             "function": lambda msg: start_step("prepare", msg)
         },
         IMPORT_READ: {
-            "function": lambda msg: start_step("import", msg),  # default: "function": lambda _: None
+            "function": lambda msg: start_step("import", msg),
             "next": [
                 {
                     "step": IMPORT_COMPARE
