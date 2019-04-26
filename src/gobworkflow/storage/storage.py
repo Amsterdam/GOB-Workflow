@@ -295,6 +295,13 @@ def step_update(step_info):
 
 @session_auto_reconnect
 def get_job_step(jobid, stepid):
+    """
+    Retrieve the job and step for the given ids
+
+    :param jobid: identification of the job
+    :param stepid: identification of the step
+    :return: Job and JobStep object for the given ids
+    """
     job = session.query(Job).get(jobid)
     step = session.query(JobStep).get(stepid)
     return job, step
