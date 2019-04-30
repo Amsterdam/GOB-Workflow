@@ -18,7 +18,7 @@ If not, the workflow is ended
 from gobcore.logging.logger import logger
 
 from gobworkflow.workflow.config import WORKFLOWS, START, DEFAULT_CONDITION
-from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_end
+from gobworkflow.workflow.jobs import job_start, job_end, step_start
 from gobworkflow.workflow.start import END_OF_WORKFLOW
 
 
@@ -73,7 +73,6 @@ class Workflow():
             :param msg: The results of the step that was executed
             :return:
             """
-            step_end(msg["header"])  # On handle result the current step has ended
             next = [next for next in self._next_steps() if self._condition(next)(msg)]
             if next:
                 # Execute the first one that matches
@@ -101,7 +100,6 @@ class Workflow():
             msg['summary'] = {}
             result = self._workflow[step_name].get("function", lambda _: None)(msg)
             if result == END_OF_WORKFLOW:
-                step_end(msg["header"])
                 self._end_of_workflow(msg)
 
         return exec_step

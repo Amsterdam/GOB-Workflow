@@ -18,8 +18,9 @@ class TestMain(TestCase):
     @mock.patch('gobcore.message_broker.messagedriven_service.messagedriven_service')
     @mock.patch('gobworkflow.storage.storage.connect')
     @mock.patch('gobworkflow.storage.storage.get_job_step')
+    @mock.patch('gobworkflow.workflow.jobs.step_status')
     @mock.patch('gobworkflow.workflow.workflow.Workflow')
-    def test_main(self, mock_workflow, mock_get_job_step, mock_connect, mock_messagedriven_service):
+    def test_main(self, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
 
         from gobworkflow import __main__
 
@@ -48,6 +49,12 @@ class TestMain(TestCase):
                 'workflow_name': 'any workflow',
                 'step_name': 'any step'
             },
+            'header': {
+                'stepid': 'any step'
+            },
             'anything': 'any value'
         })
-        self.assertEqual(workflow.msg, {'anything': 'any value'})
+        self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'stepid': 'any step' }})
+
+        __main__.on_workflow_progress({"stepid": "any step", "status": "any status"})
+        mock_status.assert_called_with("any step", "any status")

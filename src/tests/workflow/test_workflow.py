@@ -59,14 +59,12 @@ class TestWorkflow(TestCase):
 
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_start")
-    @mock.patch("gobworkflow.workflow.workflow.step_end")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
-    def test_start_and_end(self, job_start, step_end, step_start):
+    def test_start_and_end(self, job_start, step_start):
         WORKFLOWS["Workflow"]["Step"]["function"] = lambda _ : END_OF_WORKFLOW
         self.workflow.start({})
         job_start.assert_called_with("Workflow", {"header": {}, "summary": {}})
         step_start.assert_called_with("Step", {})
-        step_end.assert_called_with({})
 
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
@@ -78,27 +76,22 @@ class TestWorkflow(TestCase):
         step_start.assert_called_with("Step", {})
 
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
-    @mock.patch("gobworkflow.workflow.workflow.step_end")
     @mock.patch("gobworkflow.workflow.workflow.job_end")
-    def test_handle_result_without_next(self, job_end, step_end):
+    def test_handle_result_without_next(self, job_end):
         handler = self.workflow.handle_result()
         handler({"header": {}, "condition": False})
 
         WORKFLOWS["Workflow"]["Next"]["function"].assert_not_called()
         job_end.assert_called()
-        step_end.assert_called()
 
-    @mock.patch("gobworkflow.workflow.workflow.step_end")
     @mock.patch("gobworkflow.workflow.workflow.step_start")
-    def test_handle_result_with_next(self, step_start, step_end):
+    def test_handle_result_with_next(self, step_start):
         handler = self.workflow.handle_result()
         handler({"header": {}, "condition": True})
 
         WORKFLOWS["Workflow"]["Next"]["function"].assert_called_with({"header": {}, "summary": {}, "condition": True})
         step_start.assert_called()
-        step_end.assert_called()
 
-    @mock.patch("gobworkflow.workflow.workflow.step_end", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_start", mock.MagicMock())
     def test_handle_result_with_multiple_nexts(self):
         handler = self.workflow.handle_result()
