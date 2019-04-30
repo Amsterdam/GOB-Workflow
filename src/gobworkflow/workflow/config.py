@@ -13,18 +13,17 @@ Each next step may define a condition that needs to be met in order to get eligi
 When one or more next steps match its condition, the first one will be executed
 If no next steps are defined on can be found the workflow is ended
 """
-from gobcore.message_broker.config import IMPORT_QUEUE, EXPORT_QUEUE, REQUEST_QUEUE, PREPARE_QUEUE
-from gobcore.message_broker import publish
+from gobworkflow.workflow.start import start_workflows, start_step, has_no_errors
 
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
 # The import workflow and steps
 IMPORT = "import"
+IMPORT_PREPARE = "prepare"
 IMPORT_READ = "read"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
-IMPORT_PREPARE = "prepare"
 
 # The export workflow and steps
 EXPORT = "export"
@@ -32,28 +31,47 @@ EXPORT_GENERATE = "generate"
 
 # The relate workflow and steps
 RELATE = "relate"
+RELATE_PARSE = "parse"
+RELATE_WORKFLOWS = "workflows"
+RELATE_RELATION = "relate relation"
 RELATE_RELATE = "relate"
+RELATE_COMPARE = "compare"
+RELATE_UPLOAD = "upload"
+
+# Default check for absence of errors before starting next step
+DEFAULT_CONDITION = has_no_errors
+
 
 # The GOB workflows
 WORKFLOWS = {
+    # Example
+    # WORKFLOW_NAME: {
+    #     START: STEP_NAME,
+    #     STEP_NAME: {
+    #         "function": lambda _: None,  # default value
+    #         "next": [  # default: "next": []
+    #             {
+    #                 "condition": DEFAULT_CONDITION,  # default value
+    #                 "step": ANOTHER_STEP_NAME  # required
+    #             }
+    #         ],
+    #     }
+    # },
     IMPORT: {
         START: IMPORT_READ,
         IMPORT_PREPARE: {
-            "function": lambda msg: publish(PREPARE_QUEUE, "prepare.start", msg),
-            "next": [
-            ]
+            "function": lambda msg: start_step("prepare", msg)
         },
         IMPORT_READ: {
-            "function": lambda msg: publish(IMPORT_QUEUE, "import.start", msg),  # default: "function": lambda _: None
-            "next": [  # default: "next": []
+            "function": lambda msg: start_step("import", msg),
+            "next": [
                 {
-                    # default: "condition": lambda: True
                     "step": IMPORT_COMPARE
                 }
             ],
         },
         IMPORT_COMPARE: {
-            "function": lambda msg: publish(REQUEST_QUEUE, 'fullimport.request', msg),
+            "function": lambda msg: start_step('compare', msg),
             "next": [
                 {
                     "step": IMPORT_UPLOAD
@@ -61,19 +79,46 @@ WORKFLOWS = {
             ],
         },
         IMPORT_UPLOAD: {
-            "function": lambda msg: publish(REQUEST_QUEUE, 'fullupdate.request', msg)
+            "function": lambda msg: start_step('fullupdate', msg)
         }
     },
     EXPORT: {
         START: EXPORT_GENERATE,
         EXPORT_GENERATE: {
-            "function": lambda msg: publish(EXPORT_QUEUE, "export.start", msg)
+            "function": lambda msg: start_step("export", msg)
         }
     },
     RELATE: {
-        START: RELATE_RELATE,
+        START: RELATE_PARSE,
+        RELATE_PARSE: {
+            "function": lambda msg: start_step("relate", msg),
+            "next": [
+                {
+                    "step": RELATE_WORKFLOWS
+                }
+            ]
+        },
+        RELATE_WORKFLOWS: {
+            "function": lambda msg: start_workflows(RELATE, RELATE_RELATE, msg)
+        },
         RELATE_RELATE: {
-            "function": lambda msg: publish(REQUEST_QUEUE, "fullrelate.request", msg)
+            "function": lambda msg: start_step("relate_relation", msg),
+            "next": [
+                {
+                    "step": RELATE_COMPARE
+                }
+            ]
+        },
+        RELATE_COMPARE: {
+            "function": lambda msg: start_step('compare', msg),
+            "next": [
+                {
+                    "step": RELATE_UPLOAD
+                }
+            ],
+        },
+        RELATE_UPLOAD: {
+            "function": lambda msg: start_step('fullupdate', msg)
         }
     }
 }

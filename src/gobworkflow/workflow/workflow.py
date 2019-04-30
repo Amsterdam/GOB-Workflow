@@ -15,8 +15,11 @@ The result is interpreted by the rules of the workflow
 If a next step is found then this step is started
 If not, the workflow is ended
 """
-from gobworkflow.workflow.config import WORKFLOWS, START
-from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_end
+from gobcore.logging.logger import logger
+
+from gobworkflow.workflow.config import WORKFLOWS, START, DEFAULT_CONDITION
+from gobworkflow.workflow.jobs import job_start, job_end, step_start
+from gobworkflow.workflow.start import END_OF_WORKFLOW
 
 
 class Workflow():
@@ -49,6 +52,11 @@ class Workflow():
         job_start(self._workflow_name, msg)
         self._function(self._step_name)(msg)
 
+    def _end_of_workflow(self, msg):
+        logger.configure(msg, "WORKFLOW")
+        logger.info(f"End of workflow")
+        job_end(msg["header"])
+
     def handle_result(self):
         """
         Get a handler that processes the result of a workflow step
@@ -65,14 +73,13 @@ class Workflow():
             :param msg: The results of the step that was executed
             :return:
             """
-            step_end(msg["header"])  # On handle result the current step has ended
             next = [next for next in self._next_steps() if self._condition(next)(msg)]
             if next:
                 # Execute the first one that matches
                 self._function(next[0]["step"])(msg)
             else:
                 # No next => end of workflow reached
-                job_end(msg["header"])
+                self._end_of_workflow(msg)
 
         return handle_msg
 
@@ -89,7 +96,11 @@ class Workflow():
             :return:
             """
             step_start(step_name, msg["header"])  # Explicit start of new step
-            self._workflow[step_name].get("function", lambda _: None)(msg)
+            # Clear any summary from the previous step
+            msg['summary'] = {}
+            result = self._workflow[step_name].get("function", lambda _: None)(msg)
+            if result == END_OF_WORKFLOW:
+                self._end_of_workflow(msg)
 
         return exec_step
 
@@ -108,4 +119,4 @@ class Workflow():
         :param next: A next step config
         :return:
         """
-        return next.get("condition", lambda _: True)
+        return next.get("condition", DEFAULT_CONDITION)

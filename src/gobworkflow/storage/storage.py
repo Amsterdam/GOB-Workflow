@@ -123,6 +123,8 @@ def save_log(msg):
         name=msg.get('name', None),
         msgid=msg.get('id', None),
         msg=msg.get('msg', None),
+        jobid=msg.get('jobid', None),
+        stepid=msg.get('stepid', None),
         data=json_data,
     )
     session.add(record)
@@ -289,3 +291,17 @@ def step_update(step_info):
         setattr(step, key, value)
     session.commit()
     return step
+
+
+@session_auto_reconnect
+def get_job_step(jobid, stepid):
+    """
+    Retrieve the job and step for the given ids
+
+    :param jobid: identification of the job
+    :param stepid: identification of the step
+    :return: Job and JobStep object for the given ids
+    """
+    job = session.query(Job).get(jobid)
+    step = session.query(JobStep).get(stepid)
+    return job, step
