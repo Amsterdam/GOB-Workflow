@@ -7,14 +7,15 @@ Workflow messages consist of proposals. A proposal is evaluated (for now always 
 to the service that can handle the proposal.
 
 """
+from gobcore.status.heartbeat import STATUS_START, STATUS_OK
 from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBEAT_QUEUE, WORKFLOW_EXCHANGE
 from gobcore.message_broker.config import RESULT_QUEUE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 
 from gobworkflow.storage.storage import connect, save_log
+from gobworkflow.workflow.jobs import step_status
 from gobworkflow.workflow.workflow import Workflow
 from gobworkflow.heartbeats import on_heartbeat
-
 from gobworkflow.storage.storage import get_job_step
 
 
@@ -45,6 +46,10 @@ def start_workflow(msg):
     :param msg: The message that will be used to start a workflow
     :return: None
     """
+    # Retrieve the job and step from the message header
+    header = msg['header']
+    stepid = header['stepid']
+    step_status(stepid, STATUS_START)
     # Retrieve the workflow parameters
     workflow_name = msg['workflow']['workflow_name']
     step_name = msg['workflow']['step_name']
@@ -52,6 +57,18 @@ def start_workflow(msg):
     del msg['workflow']
     # Start the workflow with the given message
     Workflow(workflow_name, step_name).start(msg)
+    step_status(stepid, STATUS_OK)
+
+
+def on_workflow_progress(msg):
+    """
+    Process a workflow progress message
+
+    The progress report is START, OK or FAIL
+    :param msg: The message that contains the progress info
+    :return: None
+    """
+    step_status(msg['stepid'], msg['status'])
 
 
 SERVICEDEFINITION = {
@@ -78,6 +95,12 @@ SERVICEDEFINITION = {
         'queue': HEARTBEAT_QUEUE,
         'key': 'HEARTBEAT',
         'handler': on_heartbeat
+    },
+    'workflow_progress': {
+        'exchange': STATUS_EXCHANGE,
+        'queue': HEARTBEAT_QUEUE,
+        'key': 'PROGRESS',
+        'handler': on_workflow_progress
     },
 }
 

@@ -3,7 +3,8 @@ from collections import namedtuple
 
 from unittest import TestCase, mock
 
-from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_end
+from gobcore.status.heartbeat import STATUS_START, STATUS_OK, STATUS_FAIL
+from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status
 
 Job = namedtuple("Job", ["id"])
 Step = namedtuple("Job", ["id"])
@@ -42,17 +43,27 @@ class TestJobManagement(TestCase):
         step_save.return_value = Step("any id")
         step = step_start("any step", {})
         self.assertEqual(step["name"], "any step")
-        self.assertIsInstance(step["start"], datetime.datetime)
+        self.assertIsNone(step["start"])
         self.assertIsNone(step["end"])
-        self.assertEqual(step["status"], "started")
+        self.assertEqual(step["status"], "scheduled")
 
     @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
-    def test_step_end(self):
-        step = step_end({"stepid": "any stepid"})
+    def test_step_status_start(self):
+        step = step_status({"stepid": "any stepid"}, STATUS_START)
+        self.assertIsInstance(step["start"], datetime.datetime)
+        self.assertIsNone(step.get("end"))
+        self.assertEqual(step["status"], STATUS_START)
+
+    @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
+    def test_step_status_ok(self):
+        step = step_status({"stepid": "any stepid"}, STATUS_OK)
         self.assertIsInstance(step["end"], datetime.datetime)
-        self.assertEqual(step["status"], "ended")
+        self.assertIsNone(step.get("start"))
+        self.assertEqual(step["status"], STATUS_OK)
 
     @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
-    def test_step_end_missing_id(self):
-        step = step_end({})
-        self.assertIsNone(step)
+    def test_step_status_fail(self):
+        step = step_status({"stepid": "any stepid"}, STATUS_FAIL)
+        self.assertIsInstance(step["end"], datetime.datetime)
+        self.assertIsNone(step.get("start"))
+        self.assertEqual(step["status"], STATUS_FAIL)

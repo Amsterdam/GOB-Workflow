@@ -5,6 +5,7 @@ Used to create and update Jobs and JobSteps
 """
 import datetime
 
+from gobcore.status.heartbeat import STATUS_START
 from gobworkflow.storage.storage import job_save, job_update, step_save, step_update
 
 
@@ -73,13 +74,12 @@ def step_start(step_name, header):
     :param header: The header of the message that started the step
     :return:
     """
-    timestamp = _timestamp()
     step_info = {
         "jobid": header.get("jobid"),
         "name": step_name,
-        "start": timestamp,
+        "start": None,
         "end": None,
-        "status": "started"
+        "status": "scheduled"
     }
     step = step_save(step_info)
     # Store the step and register its id
@@ -89,21 +89,22 @@ def step_start(step_name, header):
     return step_info
 
 
-def step_end(header):
+def step_status(id, status):
     """
-    End a job step
+    Register the status of a workflow step
 
-    Register its status and end time
-    :param header: The header of the message that ended the step
+    STATUS_START sets the start time
+    Other statusses (STATUS_OK, STATUS_FAIL) set the end time
+    :param id:
+    :param status:
+    :return:
     """
-    id = header.get("stepid")
-    if id is None:
-        return
     timestamp = _timestamp()
+    start_end = "start" if status == STATUS_START else "end"
     step_info = {
         "id": id,
-        "end": timestamp,
-        "status": "ended"
+        "status": status,
+        start_end: timestamp
     }
     step_update(step_info)
     return step_info
