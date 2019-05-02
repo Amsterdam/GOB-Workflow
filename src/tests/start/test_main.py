@@ -64,7 +64,7 @@ class TestStart(TestCase):
 
         instance = mock_workflow.return_value
         assert instance.start.call_count == 1
-        instance.start.assert_called_with({'dataset_file': 'dataset_file'})
+        instance.start.assert_called_with({'dataset': 'dataset_file'})
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
