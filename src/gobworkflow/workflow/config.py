@@ -24,6 +24,7 @@ IMPORT_PREPARE = "prepare"
 IMPORT_READ = "read"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
+IMPORT_WORKFLOWS = "import_workflows"
 
 # The export workflow and steps
 EXPORT = "export"
@@ -32,8 +33,8 @@ EXPORT_GENERATE = "generate"
 # The relate workflow and steps
 RELATE = "relate"
 RELATE_PARSE = "parse"
-RELATE_WORKFLOWS = "workflows"
-RELATE_RELATION = "relate relation"
+RELATE_WORKFLOWS = "relate_workflows"
+RELATE_RELATION = "relate_relation"
 RELATE_RELATE = "relate"
 RELATE_COMPARE = "compare"
 RELATE_UPLOAD = "upload"
@@ -60,7 +61,15 @@ WORKFLOWS = {
     IMPORT: {
         START: IMPORT_READ,
         IMPORT_PREPARE: {
-            "function": lambda msg: start_step("prepare", msg)
+            "function": lambda msg: start_step("prepare", msg),
+            "next": [
+                {
+                    "step": IMPORT_WORKFLOWS
+                }
+            ]
+        },
+        IMPORT_WORKFLOWS: {
+            "function": lambda msg: start_workflows(IMPORT, IMPORT_READ, msg)
         },
         IMPORT_READ: {
             "function": lambda msg: start_step("import", msg),

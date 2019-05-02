@@ -68,7 +68,7 @@ The GOB workflow commands are:
         args = parser.parse_args(sys.argv[2:])
         for dataset_file in args.dataset_file:
             print(f"Trigger import of {dataset_file}")
-            Workflow(IMPORT).start({"dataset_file": dataset_file})
+            Workflow(IMPORT).start({"dataset": dataset_file})
 
     def export_command(self):
         parser = argparse.ArgumentParser(description='Start an export job for a collection')
