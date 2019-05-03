@@ -108,7 +108,7 @@ def step_status(jobid, stepid, status):
         "status": status,
         start_end: timestamp
     }
-    step_update(step_info)
+    step_info = step_update(step_info)
     if status == STATUS_FAIL:
         job_end(jobid)
     return step_info
