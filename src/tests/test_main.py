@@ -1,5 +1,6 @@
 from unittest import TestCase, mock
 
+from gobcore.status.heartbeat import STATUS_FAIL
 from collections import namedtuple
 
 class MockWorkflow:
@@ -15,6 +16,7 @@ class MockWorkflow:
 
 class TestMain(TestCase):
 
+    @mock.patch('gobcore.logging.logger.logger', mock.MagicMock())
     @mock.patch('gobcore.message_broker.messagedriven_service.messagedriven_service')
     @mock.patch('gobworkflow.storage.storage.connect')
     @mock.patch('gobworkflow.storage.storage.get_job_step')
@@ -50,11 +52,15 @@ class TestMain(TestCase):
                 'step_name': 'any step'
             },
             'header': {
+                'jobid': 'any job',
                 'stepid': 'any step'
             },
             'anything': 'any value'
         })
-        self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'stepid': 'any step' }})
+        self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'jobid': 'any job', 'stepid': 'any step' }})
 
-        __main__.on_workflow_progress({"stepid": "any step", "status": "any status"})
-        mock_status.assert_called_with("any step", "any status")
+        __main__.on_workflow_progress({"jobid": "any job", "stepid": "any step", "status": "any status"})
+        mock_status.assert_called_with("any job", "any step", "any status")
+
+        __main__.on_workflow_progress({"jobid": "any job", "stepid": "any step", "status": STATUS_FAIL, "info_msg": "Severe error"})
+        mock_status.assert_called_with("any job", "any step", STATUS_FAIL)
