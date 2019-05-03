@@ -28,14 +28,14 @@ class TestJobManagement(TestCase):
 
     @mock.patch("gobworkflow.workflow.jobs.job_update", mock.MagicMock())
     def test_job_end(self):
-        job = job_end({"jobid": "any jobid"})
+        job = job_end("any jobid")
         self.assertEqual(job["id"], "any jobid")
         self.assertIsInstance(job["end"], datetime.datetime)
         self.assertEqual(job["status"], "ended")
 
     @mock.patch("gobworkflow.workflow.jobs.job_update", mock.MagicMock())
     def test_job_end_missing_id(self):
-        job = job_end({})
+        job = job_end(None)
         self.assertIsNone(job)
 
     @mock.patch("gobworkflow.workflow.jobs.step_save")
@@ -49,21 +49,25 @@ class TestJobManagement(TestCase):
 
     @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
     def test_step_status_start(self):
-        step = step_status({"stepid": "any stepid"}, STATUS_START)
+        step = step_status("any jobid" ,"any stepid", STATUS_START)
         self.assertIsInstance(step["start"], datetime.datetime)
         self.assertIsNone(step.get("end"))
         self.assertEqual(step["status"], STATUS_START)
 
+    @mock.patch("gobworkflow.workflow.jobs.job_update")
     @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
-    def test_step_status_ok(self):
-        step = step_status({"stepid": "any stepid"}, STATUS_OK)
+    def test_step_status_ok(self, mock_job_update):
+        step = step_status("any jobid" ,"any stepid", STATUS_OK)
         self.assertIsInstance(step["end"], datetime.datetime)
         self.assertIsNone(step.get("start"))
         self.assertEqual(step["status"], STATUS_OK)
+        mock_job_update.assert_not_called()
 
     @mock.patch("gobworkflow.workflow.jobs.step_update", mock.MagicMock())
-    def test_step_status_fail(self):
-        step = step_status({"stepid": "any stepid"}, STATUS_FAIL)
+    @mock.patch("gobworkflow.workflow.jobs.job_update")
+    def test_step_status_fail(self, mock_job_update):
+        step = step_status("any jobid" ,"any stepid", STATUS_FAIL)
         self.assertIsInstance(step["end"], datetime.datetime)
         self.assertIsNone(step.get("start"))
         self.assertEqual(step["status"], STATUS_FAIL)
+        mock_job_update.assert_called()
