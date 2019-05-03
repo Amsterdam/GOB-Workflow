@@ -55,7 +55,7 @@ class Workflow():
     def _end_of_workflow(self, msg):
         logger.configure(msg, "WORKFLOW")
         logger.info(f"End of workflow")
-        job_end(msg["header"])
+        job_end(msg["header"].get("jobid"))
 
     def handle_result(self):
         """
