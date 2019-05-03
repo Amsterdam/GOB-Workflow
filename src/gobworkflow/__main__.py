@@ -71,11 +71,13 @@ def on_workflow_progress(msg):
     :return: None
     """
     status = msg['status']
-    if status == STATUS_FAIL:
+    step_info = step_status(msg['jobid'], msg['stepid'], status)
+    if status in [STATUS_OK, STATUS_FAIL]:
         logger.configure(msg, "WORKFLOW")
-        logger.error(f"Program error: {msg['info_msg']}")
-        logger.info(f"End of workflow")
-    step_status(msg['jobid'], msg['stepid'], status)
+        logger.info(f"Duration {str(step_info.end - step_info.start).split('.')[0]}")
+        if status == STATUS_FAIL:
+            logger.error(f"Program error: {msg['info_msg']}")
+            logger.info(f"End of workflow")
 
 
 SERVICEDEFINITION = {
