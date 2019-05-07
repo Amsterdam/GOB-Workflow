@@ -99,10 +99,18 @@ The GOB workflow commands are:
         parser.add_argument('catalogue',
                             type=str,
                             help='the name of the data catalog (example: "meetbouten"')
+        parser.add_argument('collections',
+                            nargs='*',
+                            type=str,
+                            default='',
+                            help='a space separated list of collections (example: "meetbouten metingen"')
         # Skip the first argument
         args = parser.parse_args(sys.argv[2:])
-        print(f"Trigger build relations for {args.catalogue}")
-        Workflow(RELATE).start({"catalogue": args.catalogue})
+        collections = ' '.join(args.collections)
+        print(f"Trigger build relations for {args.catalogue} {collections}")
+        # Relate expects a string of collections or None
+        collections = collections if args.collections else None
+        Workflow(RELATE).start({"catalogue": args.catalogue, "collections": collections})
 
 
 def init():
