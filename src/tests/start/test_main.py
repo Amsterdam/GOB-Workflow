@@ -95,6 +95,7 @@ class TestStart(TestCase):
         mock_argparse.return_value = MockArgumentParser()
         MockArgumentParser.arguments['command'] = 'relate'
         MockArgumentParser.arguments['catalogue'] = 'catalogue'
+        MockArgumentParser.arguments['collections'] = []
 
         __main__.WorkflowCommands()
 
@@ -102,7 +103,42 @@ class TestStart(TestCase):
 
         instance = mock_workflow.return_value
         assert instance.start.call_count == 1
-        instance.start.assert_called_with({'catalogue': 'catalogue'})
+        instance.start.assert_called_with({'catalogue': 'catalogue', 'collections': None})
+
+
+    @mock.patch('gobworkflow.start.__main__.Workflow')
+    @mock.patch('argparse.ArgumentParser')
+    def test_WorkflowCommands_relate_single(self, mock_argparse, mock_workflow):
+        mock_argparse.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['command'] = 'relate'
+        MockArgumentParser.arguments['catalogue'] = 'catalogue'
+        MockArgumentParser.arguments['collections'] = ['collection']
+
+        __main__.WorkflowCommands()
+
+        mock_workflow.assert_called_with(RELATE)
+
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection'})
+
+
+    @mock.patch('gobworkflow.start.__main__.Workflow')
+    @mock.patch('argparse.ArgumentParser')
+    def test_WorkflowCommands_relate_multiple(self, mock_argparse, mock_workflow):
+        mock_argparse.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['command'] = 'relate'
+        MockArgumentParser.arguments['catalogue'] = 'catalogue'
+        MockArgumentParser.arguments['collections'] = ['collection1', 'collection2']
+
+        __main__.WorkflowCommands()
+
+        mock_workflow.assert_called_with(RELATE)
+
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection1 collection2'})
+
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
