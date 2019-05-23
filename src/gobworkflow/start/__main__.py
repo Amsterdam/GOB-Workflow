@@ -10,7 +10,7 @@ import sys
 
 from gobworkflow.storage.storage import connect
 from gobworkflow.workflow.workflow import Workflow
-from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE, IMPORT_PREPARE
+from gobworkflow.workflow.config import IMPORT, EXPORT, EXPORT_TEST, RELATE, IMPORT_PREPARE
 
 
 class WorkflowCommands():
@@ -25,6 +25,7 @@ class WorkflowCommands():
 The GOB workflow commands are:
    import       Start an import job for a collection
    export       Start an export job for a collection
+   export_test  Start tests of exports for a collection
    relate       Build relations for a catalog
    prepare      Prepare a dataset for import
 ''')
@@ -111,6 +112,16 @@ The GOB workflow commands are:
         # Relate expects a string of collections or None
         collections = collections if args.collections else None
         Workflow(RELATE).start({"catalogue": args.catalogue, "collections": collections})
+
+    def export_test_command(self):
+        parser = argparse.ArgumentParser(description='Test of exports for a catalog')
+        parser.add_argument('catalogue',
+                            type=str,
+                            help='the name of the data catalog (example: "meetbouten"')
+        # Skip the first argument
+        args = parser.parse_args(sys.argv[2:])
+        print(f"Trigger export test for {args.catalogue}")
+        Workflow(EXPORT, EXPORT_TEST).start({"catalogue": args.catalogue})
 
 
 def init():

@@ -29,6 +29,7 @@ IMPORT_WORKFLOWS = "import_workflows"
 # The export workflow and steps
 EXPORT = "export"
 EXPORT_GENERATE = "generate"
+EXPORT_TEST = "test"
 
 # The relate workflow and steps
 RELATE = "relate"
@@ -95,6 +96,9 @@ WORKFLOWS = {
         START: EXPORT_GENERATE,
         EXPORT_GENERATE: {
             "function": lambda msg: start_step("export", msg)
+        },
+        EXPORT_TEST: {
+            "function": lambda msg: start_step("export_test", msg)
         }
     },
     RELATE: {

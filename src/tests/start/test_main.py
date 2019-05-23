@@ -1,6 +1,6 @@
 from unittest import TestCase, mock
 
-from gobworkflow.workflow.config import IMPORT, EXPORT, RELATE, IMPORT_PREPARE
+from gobworkflow.workflow.config import IMPORT, EXPORT, EXPORT_TEST, RELATE, IMPORT_PREPARE
 
 from gobworkflow.start import __main__
 
@@ -169,3 +169,17 @@ class TestStart(TestCase):
         instance = mock_workflow.return_value
         assert instance.start.call_count == 1
         instance.start.assert_called_with({'prepare_config': 'config.json', 'dataset_file': 'dataset.json'})
+
+    @mock.patch('gobworkflow.start.__main__.Workflow')
+    @mock.patch('argparse.ArgumentParser')
+    def test_WorkflowCommands_prepare(self, mock_argparse, mock_workflow):
+        mock_argparse.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['command'] = 'export_test'
+        MockArgumentParser.arguments['catalogue'] = 'any catalogue'
+
+        __main__.WorkflowCommands()
+
+        mock_workflow.assert_called_with(EXPORT, EXPORT_TEST)
+        instance = mock_workflow.return_value
+        assert instance.start.call_count == 1
+        instance.start.assert_called_with({'catalogue': 'any catalogue'})
