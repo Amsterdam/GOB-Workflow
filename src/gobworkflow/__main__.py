@@ -7,7 +7,7 @@ Workflow messages consist of proposals. A proposal is evaluated (for now always 
 to the service that can handle the proposal.
 
 """
-from gobcore.status.heartbeat import STATUS_START, STATUS_OK, STATUS_FAIL
+from gobcore.status.heartbeat import STATUS_OK, STATUS_FAIL
 from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBEAT_QUEUE, WORKFLOW_EXCHANGE
 from gobcore.message_broker.config import RESULT_QUEUE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
@@ -47,11 +47,6 @@ def start_workflow(msg):
     :param msg: The message that will be used to start a workflow
     :return: None
     """
-    # Retrieve the job and step from the message header
-    header = msg['header']
-    jobid = header['jobid']
-    stepid = header['stepid']
-    step_status(jobid, stepid, STATUS_START)
     # Retrieve the workflow parameters
     workflow_name = msg['workflow']['workflow_name']
     step_name = msg['workflow']['step_name']
@@ -59,7 +54,6 @@ def start_workflow(msg):
     del msg['workflow']
     # Start the workflow with the given message
     Workflow(workflow_name, step_name).start(msg)
-    step_status(jobid, stepid, STATUS_OK)
 
 
 def on_workflow_progress(msg):
