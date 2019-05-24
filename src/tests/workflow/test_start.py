@@ -29,23 +29,27 @@ class TestStart(TestCase):
         }
         mock_publish.assert_called_with(REQUEST_QUEUE, "workflow.start", expect_msg)
 
+    @mock.patch('gobworkflow.workflow.start.step_status', mock.MagicMock())
     @mock.patch('gobworkflow.workflow.start.publish')
     def testStartWorkflows(self, mock_publish):
         workflow = "any workflow"
         step = "any step"
 
         msg = {
+            'header': { 'jobid': 0, 'stepid': 0 },
             'contents': []
         }
         start.start_workflows(workflow, step, msg)
         mock_publish.assert_not_called()
 
         msg = {
+            'header': { 'jobid': 0, 'stepid': 0 },
             'contents': [1, 2]
         }
         start.start_workflows(workflow, step, msg)
         for content in msg['contents']:
             expect_msg = {
+                'header': { 'jobid': 0, 'stepid': 0 },
                 'contents': content,
                 'workflow': {
                     'workflow_name': workflow,
