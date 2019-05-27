@@ -7,7 +7,9 @@ A has_no_errors method is available to be used as a default condition to start a
 from gobcore.logging.logger import logger
 from gobcore.message_broker.config import REQUEST_QUEUE
 from gobcore.message_broker import publish
+from gobcore.status.heartbeat import STATUS_START, STATUS_OK
 
+from gobworkflow.workflow.jobs import step_status
 
 # Special return value that a function can return to end the current workflow
 END_OF_WORKFLOW = "END_OF_WORKFLOW"
@@ -24,6 +26,12 @@ def start_workflows(workflow_name, step_name, msg):
     :param msg: The message that holds the info to start the workflow
     :return: None
     """
+    header = msg['header']
+    jobid = header['jobid']
+    stepid = header['stepid']
+
+    step_status(jobid, stepid, STATUS_START)
+
     # Contents is an array of contents. For each element the specified workflow is started
     for content in msg['contents']:
         # Construct the message from the given message, the contents is retrieved from the input message contents
@@ -32,6 +40,8 @@ def start_workflows(workflow_name, step_name, msg):
             'contents': content
         }
         start_workflow(workflow_name, step_name, new_msg)
+
+    step_status(jobid, stepid, STATUS_OK)
     return END_OF_WORKFLOW  # End current workflow when starting a new workflow
 
 
