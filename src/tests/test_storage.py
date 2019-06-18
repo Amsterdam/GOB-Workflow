@@ -339,8 +339,7 @@ class TestStorage(TestCase):
     def test_task_unlock(self):
         mock_session = MockedSession()
         gobworkflow.storage.storage.session = mock_session
-        result = task_unlock(Task())
-        self.assertTrue(result)
+        task_unlock(Task())
         self.assertEqual(({'lock': None},), mock_session.update_args)
 
     def test_get_tasks_for_stepid(self):
