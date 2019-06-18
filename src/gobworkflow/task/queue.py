@@ -107,7 +107,11 @@ class TaskQueue:
                 'stepid': stepid,
                 'dst_queue': dst_queue,
                 'key_prefix': key_prefix,
-                'extra_msg': extra_msg,
+                'extra_msg': {
+                    # Add global extra msg and extra_msg on task level
+                    **extra_msg,
+                    **task.get('extra_msg', {}),
+                }
             }
             task_save(task_def)
 
