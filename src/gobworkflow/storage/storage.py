@@ -355,8 +355,7 @@ def task_unlock(task):
     step_cnt = session.query(Task).filter(and_(Task.id == task.id, Task.lock != None)) \
         .update({'lock': None})  # noqa: E711 (!= None)
     session.commit()
-
-    return step_cnt > 0
+    assert step_cnt > 0, "Task was already unlocked. That can't be right."
 
 
 @session_auto_reconnect
