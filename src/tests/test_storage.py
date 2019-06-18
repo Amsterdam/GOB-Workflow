@@ -2,13 +2,14 @@ from unittest import TestCase, mock
 
 from sqlalchemy.exc import DBAPIError
 
-from gobcore.model.sa.management import Job, JobStep
+from gobcore.model.sa.management import Job, JobStep, Task
 
 import gobworkflow.storage
 
 from gobworkflow.storage.storage import connect, disconnect, is_connected
-from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, _update_tasks
+from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, _update_servicetasks
 from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step
+from gobworkflow.storage.storage import task_get, task_save, task_update, task_lock, task_unlock, get_tasks_for_stepid
 
 class MockedService:
 
@@ -27,6 +28,8 @@ class MockedSession:
         self._add = None
         self._delete = None
         self._all = []
+        self.filter_kwargs = {}
+        self.update_args = ()
         pass
 
     def rollback(self):
@@ -45,6 +48,7 @@ class MockedSession:
         return arg
 
     def filter_by(self, *args, **kwargs):
+        self.filter_kwargs = kwargs
         return self
 
     def filter(self, *args, **kwargs):
@@ -66,6 +70,10 @@ class MockedSession:
 
     def commit(self):
         pass
+
+    def update(self, *args, **kwargs):
+        self.update_args = args
+        return 1
 
 class MockedEngine:
 
@@ -201,27 +209,27 @@ class TestStorage(TestCase):
         mock_add.assert_called_with(mock.ANY)
         mock_commit.assert_called_with()
 
-    def test_update_tasks(self):
+    def test_update_servicetasks(self):
         gobworkflow.storage.storage.Service = MockedService
         gobworkflow.storage.storage.ServiceTask = MockedService
 
         mockedSession = MockedSession()
         gobworkflow.storage.storage.session = mockedSession
         # No action on empty lists
-        _update_tasks(MockedService(), tasks=[])
+        _update_servicetasks(MockedService(), tasks=[])
         self.assertEqual(mockedSession._add, None)
         self.assertEqual(mockedSession._delete, None)
 
         mockedSession = MockedSession()
         gobworkflow.storage.storage.session = mockedSession
         # add task when not yet exists
-        _update_tasks(MockedService(), tasks=[{"name": "AnyTask"}])
+        _update_servicetasks(MockedService(), tasks=[{"name": "AnyTask"}])
         self.assertEqual(mockedSession._add.name, "AnyTask")
 
         mockedSession = MockedSession()
         gobworkflow.storage.storage.session = mockedSession
         # delete task when it no longer exists
-        _update_tasks(MockedService(), tasks=[])
+        _update_servicetasks(MockedService(), tasks=[])
         self.assertEqual(mockedSession._delete, None)
 
         mockedSession = MockedSession()
@@ -230,7 +238,7 @@ class TestStorage(TestCase):
         other_task = MockedService(**{"name": "AnyTask2", "is_alive": None})
         # update task
         mockedSession._all = [mocked_task, other_task]
-        _update_tasks(MockedService(), tasks=[{"name": "AnyTask", "is_alive": True}])
+        _update_servicetasks(MockedService(), tasks=[{"name": "AnyTask", "is_alive": True}])
         self.assertEqual(mocked_task.is_alive, True)
 
     def test_get_services(self):
@@ -239,8 +247,8 @@ class TestStorage(TestCase):
         services = get_services()
         self.assertEqual(services, [])
 
-    @mock.patch("gobworkflow.storage.storage._update_tasks")
-    def test_mark_as_dead(self, mock_update_tasks):
+    @mock.patch("gobworkflow.storage.storage._update_servicetasks")
+    def test_mark_as_dead(self, mock_update_servicetasks):
         mockedSession = MockedSession()
         gobworkflow.storage.storage.session = mockedSession
 
@@ -248,7 +256,7 @@ class TestStorage(TestCase):
         mark_service_dead(mockedService)
 
         self.assertEqual(mockedService.is_alive, False)
-        mock_update_tasks.assert_called_with(mockedService, [])
+        mock_update_servicetasks.assert_called_with(mockedService, [])
 
     def test_remove_service(self):
         mockedSession = MockedSession()
@@ -293,3 +301,52 @@ class TestStorage(TestCase):
         job, step = get_job_step(1, 2)
         self.assertEqual(job, 1)
         self.assertEqual(step, 2)
+
+    def test_task_get(self):
+        result = task_get('someid')
+        self.assertEqual('someid', result)
+
+    def test_task_save(self):
+        result = task_save({"name": "any name"})
+        self.assertIsInstance(result, Task)
+        self.assertEqual(result.name, "any name")
+
+    def test_task_update(self):
+        mockedSession = MockedSession()
+        gobworkflow.storage.storage.session = mockedSession
+        mockedSession.get = lambda id: Task()
+
+        result = task_update({"id": 123})
+        self.assertIsInstance(result, Task)
+        self.assertEqual(result.id, 123)
+
+    def test_task_lock(self):
+        mock_session = MockedSession()
+        gobworkflow.storage.storage.session = mock_session
+
+        result = task_lock(Task())
+        self.assertTrue(result)
+        self.assertTrue(len(mock_session.update_args) == 1)
+        self.assertTrue(type(mock_session.update_args[0]['lock']) == int)
+
+    def test_task_lock_fail(self):
+        mock_session = MockedSession()
+        gobworkflow.storage.storage.session = mock_session
+        mock_session.update = lambda _: 0
+        result = task_lock(Task())
+        self.assertFalse(result)
+
+    def test_task_unlock(self):
+        mock_session = MockedSession()
+        gobworkflow.storage.storage.session = mock_session
+        result = task_unlock(Task())
+        self.assertTrue(result)
+        self.assertEqual(({'lock': None},), mock_session.update_args)
+
+    def test_get_tasks_for_stepid(self):
+        mock_session = MockedSession()
+        gobworkflow.storage.storage.session = mock_session
+        mock_session.all = lambda: ['a', 'b']
+        result = get_tasks_for_stepid("someid")
+        self.assertEqual({"stepid": "someid"}, mock_session.filter_kwargs)
+        self.assertEqual(['a', 'b'], result)

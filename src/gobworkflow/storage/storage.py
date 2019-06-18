@@ -7,14 +7,14 @@ import json
 
 import alembic.config
 
-from sqlalchemy import create_engine, or_
+from sqlalchemy import create_engine, or_, and_
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
 
 from gobcore.typesystem.json import GobTypeJSONEncoder
 
-from gobcore.model.sa.management import Base, Job, JobStep, Log, Service, ServiceTask
+from gobcore.model.sa.management import Base, Job, JobStep, Log, Service, ServiceTask, Task
 
 from gobworkflow.config import GOB_MGMT_DB
 from gobworkflow.storage.auto_reconnect_wrapper import auto_reconnect_wrapper
@@ -150,7 +150,7 @@ def mark_service_dead(service):
     # mark as dead
     service.is_alive = False
     # remove any tasks
-    _update_tasks(service, [])
+    _update_servicetasks(service, [])
 
     session.commit()
 
@@ -163,7 +163,7 @@ def remove_service(service):
     :return: None
     """
     # remove any tasks
-    _update_tasks(service, [])
+    _update_servicetasks(service, [])
     # remove service
     session.query(Service) \
         .filter(Service.host == service.host) \
@@ -198,13 +198,13 @@ def update_service(service, tasks):
         session.commit()
 
     # Update status with current tasks
-    _update_tasks(current, tasks)
+    _update_servicetasks(current, tasks)
 
     session.commit()
 
 
 @session_auto_reconnect
-def _update_tasks(service, tasks):
+def _update_servicetasks(service, tasks):
     """Update tasks
 
     Delete all current tasks that are not in tasks
@@ -291,6 +291,82 @@ def step_update(step_info):
         setattr(step, key, value)
     session.commit()
     return step
+
+
+@session_auto_reconnect
+def task_get(task_id):
+    """Returns task with task_id
+
+    :param task_id:
+    :return:
+    """
+    return session.query(Task).get(task_id)
+
+
+@session_auto_reconnect
+def task_save(task_info):
+    """
+    Create Task using the information in task_info and store it
+
+    :param task_info:
+    :return:
+    """
+    task = Task(**task_info)
+    session.add(task)
+    session.commit()
+    return task
+
+
+@session_auto_reconnect
+def task_update(task_info):
+    """
+    Update JobStep using the information in step_info
+    :param step_info: JobStep attributes
+    :return: JobStep instance
+    """
+    task = session.query(Task).get(task_info["id"])
+    for key, value in task_info.items():
+        setattr(task, key, value)
+    session.commit()
+    return task
+
+
+@session_auto_reconnect
+def task_lock(task):
+    """Places the current timestamp in the 'lock' attribute of the Task.
+
+    :param task:
+    :return:
+    """
+    step_cnt = session.query(Task).filter(and_(Task.id == task.id, Task.lock == None)) \
+        .update({'lock': int(datetime.datetime.now().timestamp())})  # noqa: E711 (== None)
+    session.commit()
+
+    return step_cnt > 0
+
+
+@session_auto_reconnect
+def task_unlock(task):
+    """Removes the lock from a Task
+
+    :param task:
+    :return:
+    """
+    step_cnt = session.query(Task).filter(and_(Task.id == task.id, Task.lock != None)) \
+        .update({'lock': None})  # noqa: E711 (!= None)
+    session.commit()
+
+    return step_cnt > 0
+
+
+@session_auto_reconnect
+def get_tasks_for_stepid(stepid):
+    """Returns all tasks for the given stepid
+
+    :param stepid:
+    :return:
+    """
+    return session.query(Task).filter_by(stepid=stepid).all()
 
 
 @session_auto_reconnect
