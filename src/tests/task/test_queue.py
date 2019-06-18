@@ -98,6 +98,8 @@ class TestTaskQueue(TestCase):
         key_prefix = "prefix",
         extra_msg = {"extra": "msg"}
 
+        self.tasks[0]['extra_msg'] = {'extra2': 'fromtask'}
+
         self.task_queue._create_tasks(self.jobid, self.stepid, self.tasks[:2], dst_queue, key_prefix, extra_msg)
 
         mock_task_save.assert_has_calls([
@@ -109,7 +111,10 @@ class TestTaskQueue(TestCase):
                 'stepid': self.stepid,
                 'dst_queue': dst_queue,
                 'key_prefix': key_prefix,
-                'extra_msg': extra_msg,
+                'extra_msg': {
+                    'extra': 'msg',
+                    'extra2': 'fromtask',
+                },
             }),
             call({
                 'name': self.tasks[1]['id'],
@@ -124,6 +129,7 @@ class TestTaskQueue(TestCase):
         ])
 
         mock_get_tasks.assert_called_with(self.stepid)
+
 
     @patch("gobworkflow.task.queue.get_tasks_for_stepid")
     def test_create_tasks_existing_steps(self, mock_get_tasks):
