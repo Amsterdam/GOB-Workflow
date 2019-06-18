@@ -8,7 +8,8 @@ to the service that can handle the proposal.
 
 """
 from gobcore.status.heartbeat import STATUS_OK, STATUS_FAIL
-from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBEAT_QUEUE, WORKFLOW_EXCHANGE
+from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBEAT_QUEUE, WORKFLOW_EXCHANGE, \
+    TASK_QUEUE, TASK_RESULT_QUEUE
 from gobcore.message_broker.config import RESULT_QUEUE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 from gobcore.logging.logger import logger
@@ -18,6 +19,7 @@ from gobworkflow.workflow.jobs import step_status
 from gobworkflow.workflow.workflow import Workflow
 from gobworkflow.heartbeats import on_heartbeat
 from gobworkflow.storage.storage import get_job_step
+from gobworkflow.task.queue import TaskQueue
 
 
 def handle_result(msg):
@@ -74,6 +76,8 @@ def on_workflow_progress(msg):
             logger.info(f"End of workflow")
 
 
+task_queue = TaskQueue()
+
 SERVICEDEFINITION = {
     'step_completed': {
         'exchange': WORKFLOW_EXCHANGE,
@@ -104,6 +108,18 @@ SERVICEDEFINITION = {
         'queue': HEARTBEAT_QUEUE,
         'key': 'PROGRESS',
         'handler': on_workflow_progress
+    },
+    'start_tasks': {
+        'exchange': WORKFLOW_EXCHANGE,
+        'queue': TASK_QUEUE,
+        'key': 'task.start',
+        'handler': task_queue.on_start_tasks,
+    },
+    'task_completed': {
+        'exchange': WORKFLOW_EXCHANGE,
+        'queue': TASK_RESULT_QUEUE,
+        'key': 'task.complete',
+        'handler': task_queue.on_task_result
     },
 }
 
