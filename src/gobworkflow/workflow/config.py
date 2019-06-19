@@ -39,7 +39,7 @@ RELATE_RELATION = "relate_relation"
 RELATE_RELATE = "relate"
 RELATE_COMPARE = "compare"
 RELATE_UPLOAD = "upload"
-RELATE_APPLY = "apply"
+RELATE_CHECK = "check"
 
 # Default check for absence of errors before starting next step
 DEFAULT_CONDITION = has_no_errors
@@ -120,7 +120,7 @@ WORKFLOWS = {
             "next": [
                 {
                     "condition": lambda msg: msg['summary'].get('up-to-date'),
-                    "step": RELATE_APPLY
+                    "step": RELATE_CHECK
                 },
                 {
                     "step": RELATE_COMPARE
@@ -139,12 +139,12 @@ WORKFLOWS = {
             "function": lambda msg: start_step('fullupdate', msg),
             "next": [
                 {
-                    "step": RELATE_APPLY
+                    "step": RELATE_CHECK
                 }
             ],
         },
-        RELATE_APPLY: {
-            "function": lambda msg: start_step('apply_relation', msg)
+        RELATE_CHECK: {
+            "function": lambda msg: start_step('check_relation', msg)
         }
     }
 }
