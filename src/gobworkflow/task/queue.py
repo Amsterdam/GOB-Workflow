@@ -44,6 +44,7 @@ class TaskQueue:
         header = msg['header']
         stepid = header['stepid']
         jobid = header['jobid']
+        process_id = header['process_id']
 
         # Incoming message may be large. Manually load message from file if necessary
         msg, _ = load_message(msg, json.loads, {'stream_contents': False})
@@ -61,7 +62,7 @@ class TaskQueue:
             raise GOBException(f"No jobstep found with id {stepid}")
 
         self._validate_dependencies(tasks)
-        self._create_tasks(jobid, stepid, tasks, dst_queue, key_prefix, extra_msg)
+        self._create_tasks(jobid, stepid, process_id, tasks, dst_queue, key_prefix, extra_msg)
         self._queue_free_tasks_for_jobstep(stepid)
 
     def _validate_dependencies(self, tasks):
@@ -84,7 +85,7 @@ class TaskQueue:
 
             done.append(task['id'])
 
-    def _create_tasks(self, jobid, stepid, tasks, dst_queue, key_prefix, extra_msg):
+    def _create_tasks(self, jobid, stepid, process_id, tasks, dst_queue, key_prefix, extra_msg):
         """Create Task objects for the input list 'tasks'.
 
         :param jobid:
@@ -111,7 +112,8 @@ class TaskQueue:
                     # Add global extra msg and extra_msg on task level
                     **extra_msg,
                     **task.get('extra_msg', {}),
-                }
+                },
+                'process_id': process_id,
             }
             task_save(task_def)
 
@@ -145,6 +147,7 @@ class TaskQueue:
             'header': {
                 'jobid': task.jobid,
                 'stepid': task.stepid,
+                'process_id': task.process_id,
             }
         }
         publish(task.dst_queue, task.key_prefix + self.TASK_KEY, msg)

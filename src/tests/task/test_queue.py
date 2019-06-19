@@ -11,6 +11,7 @@ from gobcore.exceptions import GOBException
 class TestTaskQueue(TestCase):
     stepid = 2490
     jobid = 240
+    process_id = 23
 
     def setUp(self) -> None:
         self.tasks = [
@@ -22,6 +23,7 @@ class TestTaskQueue(TestCase):
             'header': {
                 'stepid': self.stepid,
                 'jobid': self.jobid,
+                'process_id': self.process_id,
             },
             'contents': {
                 'tasks': self.tasks,
@@ -60,7 +62,7 @@ class TestTaskQueue(TestCase):
         mock_get_job_step.assert_called_with(self.jobid, self.stepid)
 
         self.task_queue._validate_dependencies.assert_called_with(self.tasks)
-        self.task_queue._create_tasks.assert_called_with(self.jobid, self.stepid, self.tasks,
+        self.task_queue._create_tasks.assert_called_with(self.jobid, self.stepid, self.process_id, self.tasks,
                                                          self.start_message['contents']['dst_queue'], 'pref',
                                                          self.start_message['contents']['extra_msg'])
         self.task_queue._queue_free_tasks_for_jobstep.assert_called_with(self.stepid)
@@ -80,7 +82,6 @@ class TestTaskQueue(TestCase):
 
     def test_validate_dependencies_double_id(self):
         self.tasks[2]['id'] = self.tasks[1]['id']
-        print(self.tasks)
         with self.assertRaises(AssertionError):
             self.task_queue._validate_dependencies(self.tasks)
 
@@ -100,7 +101,8 @@ class TestTaskQueue(TestCase):
 
         self.tasks[0]['extra_msg'] = {'extra2': 'fromtask'}
 
-        self.task_queue._create_tasks(self.jobid, self.stepid, self.tasks[:2], dst_queue, key_prefix, extra_msg)
+        self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, self.tasks[:2], dst_queue, key_prefix,
+                                      extra_msg)
 
         mock_task_save.assert_has_calls([
             call({
@@ -115,6 +117,7 @@ class TestTaskQueue(TestCase):
                     'extra': 'msg',
                     'extra2': 'fromtask',
                 },
+                'process_id': self.process_id,
             }),
             call({
                 'name': self.tasks[1]['id'],
@@ -125,6 +128,7 @@ class TestTaskQueue(TestCase):
                 'dst_queue': dst_queue,
                 'key_prefix': key_prefix,
                 'extra_msg': extra_msg,
+                'process_id': self.process_id,
             })
         ])
 
@@ -136,7 +140,7 @@ class TestTaskQueue(TestCase):
         mock_get_tasks.return_value = [1, 2, 3]
 
         with self.assertRaises(AssertionError):
-            self.task_queue._create_tasks(self.jobid, self.stepid, [], '', '', {})
+            self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, [], '', '', {})
 
     @patch("gobworkflow.task.queue.get_tasks_for_stepid")
     @patch("gobworkflow.task.queue.task_lock")
@@ -176,7 +180,7 @@ class TestTaskQueue(TestCase):
     @patch("gobworkflow.task.queue.task_update")
     def test_queue_task(self, mock_update, mock_publish):
         task = Task(id=123, name='task name', jobid=self.jobid, stepid=self.stepid, extra_msg={'extra': 'msg'},
-                    dst_queue='destination.queue', key_prefix='prefix')
+                    dst_queue='destination.queue', key_prefix='prefix', process_id=self.process_id)
 
         with freeze_time():
             self.task_queue._queue_task(task)
@@ -188,7 +192,8 @@ class TestTaskQueue(TestCase):
             'id': task.name,
             'header': {
                 'jobid': task.jobid,
-                'stepid': task.stepid
+                'stepid': task.stepid,
+                'process_id': task.process_id,
             }
         })
 
