@@ -119,6 +119,10 @@ WORKFLOWS = {
             "function": lambda msg: start_step("relate_relation", msg),
             "next": [
                 {
+                    "condition": lambda msg: msg['summary'].get('up-to-date'),
+                    "step": RELATE_APPLY
+                },
+                {
                     "step": RELATE_COMPARE
                 }
             ]
