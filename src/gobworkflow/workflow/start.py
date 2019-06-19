@@ -4,9 +4,12 @@ Module containing workflow start methods.
 Starting a next step may require that a result message contains no errors.
 A has_no_errors method is available to be used as a default condition to start a next step
 """
+import json
+
 from gobcore.logging.logger import logger
 from gobcore.message_broker.config import REQUEST_QUEUE
 from gobcore.message_broker import publish
+from gobcore.message_broker.offline_contents import load_message
 from gobcore.status.heartbeat import STATUS_START, STATUS_OK
 
 from gobworkflow.workflow.jobs import step_status
@@ -31,6 +34,9 @@ def start_workflows(workflow_name, step_name, msg):
     stepid = header['stepid']
 
     step_status(jobid, stepid, STATUS_START)
+
+    # Incoming message may be large. Manually load message from file if necessary
+    msg, _ = load_message(msg, json.loads, {'stream_contents': False})
 
     # Contents is an array of contents. For each element the specified workflow is started
     for content in msg['contents']:
