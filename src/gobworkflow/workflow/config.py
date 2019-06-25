@@ -33,12 +33,7 @@ EXPORT_TEST = "test"
 
 # The relate workflow and steps
 RELATE = "relate"
-RELATE_PARSE = "parse"
-RELATE_WORKFLOWS = "relate_workflows"
-RELATE_RELATION = "relate_relation"
-RELATE_RELATE = "relate"
-RELATE_COMPARE = "compare"
-RELATE_UPLOAD = "upload"
+RELATE_UPDATE = "relate"
 RELATE_CHECK = "check"
 
 # Default check for absence of errors before starting next step
@@ -103,45 +98,9 @@ WORKFLOWS = {
         }
     },
     RELATE: {
-        START: RELATE_PARSE,
-        RELATE_PARSE: {
+        START: RELATE_UPDATE,
+        RELATE_UPDATE: {
             "function": lambda msg: start_step("relate", msg),
-            "next": [
-                {
-                    "step": RELATE_WORKFLOWS
-                }
-            ]
-        },
-        RELATE_WORKFLOWS: {
-            "function": lambda msg: start_workflows(RELATE, RELATE_RELATE, msg)
-        },
-        RELATE_RELATE: {
-            "function": lambda msg: start_step("relate_relation", msg),
-            "next": [
-                {
-                    "condition": lambda msg: msg['summary'].get('up-to-date'),
-                    "step": RELATE_CHECK
-                },
-                {
-                    "step": RELATE_COMPARE
-                }
-            ]
-        },
-        RELATE_COMPARE: {
-            "function": lambda msg: start_step('compare', msg),
-            "next": [
-                {
-                    "step": RELATE_UPLOAD
-                }
-            ],
-        },
-        RELATE_UPLOAD: {
-            "function": lambda msg: start_step('fullupdate', msg),
-            "next": [
-                {
-                    "step": RELATE_CHECK
-                }
-            ],
         },
         RELATE_CHECK: {
             "function": lambda msg: start_step('check_relation', msg)
