@@ -101,6 +101,12 @@ WORKFLOWS = {
         START: RELATE_UPDATE,
         RELATE_UPDATE: {
             "function": lambda msg: start_step("relate", msg),
+            "next": [
+                {
+                    "condition": lambda _: True,
+                    "step": RELATE_CHECK
+                }
+            ]
         },
         RELATE_CHECK: {
             "function": lambda msg: start_step('check_relation', msg)
