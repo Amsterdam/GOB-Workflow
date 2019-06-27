@@ -8,9 +8,9 @@ to the service that can handle the proposal.
 
 """
 from gobcore.status.heartbeat import STATUS_OK, STATUS_FAIL
-from gobcore.message_broker.config import LOG_EXCHANGE, STATUS_EXCHANGE, HEARTBEAT_QUEUE, WORKFLOW_EXCHANGE, \
-    TASK_QUEUE, TASK_RESULT_QUEUE
-from gobcore.message_broker.config import RESULT_QUEUE
+from gobcore.message_broker.config import HEARTBEAT_QUEUE, TASK_QUEUE, TASK_RESULT_QUEUE, PROGRESS_QUEUE, \
+    WORKFLOW_QUEUE
+from gobcore.message_broker.config import JOBSTEP_RESULT_QUEUE, LOG_QUEUE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 from gobcore.logging.logger import logger
 
@@ -23,6 +23,7 @@ from gobworkflow.task.queue import TaskQueue
 
 
 def handle_result(msg):
+
     """
     Handle the result of a message.
     Result messages are received via the result queue
@@ -80,45 +81,31 @@ task_queue = TaskQueue()
 
 SERVICEDEFINITION = {
     'step_completed': {
-        'exchange': WORKFLOW_EXCHANGE,
-        'queue': RESULT_QUEUE,
-        'key': '*.result',
+        'queue': JOBSTEP_RESULT_QUEUE,
         'handler': handle_result
     },
     'start_workflow': {
-        'exchange': WORKFLOW_EXCHANGE,
-        'queue': RESULT_QUEUE,
-        'key': 'workflow.start',
+        'queue': WORKFLOW_QUEUE,
         'handler': start_workflow
     },
     'save_logs': {
-        'exchange': LOG_EXCHANGE,
-        'queue': 'gob.log.all',
-        'key': '#',
+        'queue': LOG_QUEUE,
         'handler': save_log
     },
     'heartbeat_monitor': {
-        'exchange': STATUS_EXCHANGE,
         'queue': HEARTBEAT_QUEUE,
-        'key': 'HEARTBEAT',
         'handler': on_heartbeat
     },
     'workflow_progress': {
-        'exchange': STATUS_EXCHANGE,
-        'queue': HEARTBEAT_QUEUE,
-        'key': 'PROGRESS',
+        'queue': PROGRESS_QUEUE,
         'handler': on_workflow_progress
     },
     'start_tasks': {
-        'exchange': WORKFLOW_EXCHANGE,
         'queue': TASK_QUEUE,
-        'key': 'task.start',
         'handler': task_queue.on_start_tasks,
     },
     'task_completed': {
-        'exchange': WORKFLOW_EXCHANGE,
         'queue': TASK_RESULT_QUEUE,
-        'key': 'task.complete',
         'handler': task_queue.on_task_result
     },
 }

@@ -1,7 +1,6 @@
 from unittest import TestCase, mock
 
-from gobcore.message_broker.config import REQUEST_QUEUE
-
+from gobcore.message_broker.config import WORKFLOW_EXCHANGE
 from gobworkflow.workflow import start
 
 class TestStart(TestCase):
@@ -13,7 +12,7 @@ class TestStart(TestCase):
     def testStartStep(self, mock_publish):
         msg = "any message"
         start.start_step("step", msg)
-        mock_publish.assert_called_with(REQUEST_QUEUE, "step.start", msg)
+        mock_publish.assert_called_with(WORKFLOW_EXCHANGE, "step.request", msg)
 
     @mock.patch('gobworkflow.workflow.start.publish')
     def testStartWorkflow(self, mock_publish):
@@ -27,7 +26,7 @@ class TestStart(TestCase):
                 'step_name': step
             }
         }
-        mock_publish.assert_called_with(REQUEST_QUEUE, "workflow.start", expect_msg)
+        mock_publish.assert_called_with(WORKFLOW_EXCHANGE, "workflow.request", expect_msg)
 
     @mock.patch('gobworkflow.workflow.start.step_status', mock.MagicMock())
     @mock.patch('gobworkflow.workflow.start.publish')
@@ -56,7 +55,7 @@ class TestStart(TestCase):
                     'step_name': step
                 }
             }
-            mock_publish.assert_any_call(REQUEST_QUEUE, "workflow.start", expect_msg)
+            mock_publish.assert_any_call(WORKFLOW_EXCHANGE, "workflow.request", expect_msg)
         self.assertEqual(mock_publish.call_count, len(msg['contents']))
 
     @mock.patch('gobworkflow.workflow.start.logger', mock.MagicMock())

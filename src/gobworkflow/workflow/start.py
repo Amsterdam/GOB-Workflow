@@ -7,7 +7,7 @@ A has_no_errors method is available to be used as a default condition to start a
 import json
 
 from gobcore.logging.logger import logger
-from gobcore.message_broker.config import REQUEST_QUEUE
+from gobcore.message_broker.config import WORKFLOW_EXCHANGE
 from gobcore.message_broker import publish
 from gobcore.message_broker.offline_contents import load_message
 from gobcore.status.heartbeat import STATUS_START, STATUS_OK
@@ -71,7 +71,7 @@ def start_workflow(workflow_name, step_name, msg):
 
 
 def start_step(key, msg):
-    publish(REQUEST_QUEUE, f"{key}.start", msg)
+    publish(WORKFLOW_EXCHANGE, f"{key}.request", msg)
 
 
 def has_no_errors(msg):

@@ -6,6 +6,8 @@ from gobcore.exceptions import GOBException
 from gobcore.message_broker import publish
 from gobcore.message_broker.offline_contents import load_message
 
+from gobcore.message_broker.config import WORKFLOW_EXCHANGE, TASK_COMPLETE, TASK_REQUEST
+
 
 class TaskQueue:
     """TaskQueue
@@ -13,10 +15,10 @@ class TaskQueue:
     Queue that can be used by services to cut a JobStep (or other work unit, for that matter) into smaller Tasks.
     The method on_start_tasks is the entry method for the TaskQueue.
 
-    TaskQueue makes sure tasks are executed with interdependencies in mind. The tasks are published on the dst_queue
-    provided by the user, under key {key_prefix}.task, where prefix is supplied by the user. After all tasks have
-    been completed, a message is sent to {key_prefix}.complete. It is the responsibility for the user of TaskQueue to
-    have listeners implemented on dst_queue with keys {key_prefix}.task and {key_prefix}.complete.
+    TaskQueue makes sure tasks are executed with interdependencies in mind. The tasks are published on the WORKFLOW_
+    EXCHANGE, under key {key_prefix}.TASK_REQUEST, where prefix is supplied by the user. After all tasks have
+    been completed, a message is sent to {key_prefix}.TASK_COMPLETE. It is the responsibility for the user of TaskQueue
+    to have listeners implemented.
 
     Example implementation:
     The Prepare service has a list of actions, which may depend on other actions. Prepare supplies a list of id's with
@@ -31,9 +33,6 @@ class TaskQueue:
     STATUS_QUEUED = 'queued'
     STATUS_ABORTED = 'aborted'
     STATUS_FAILED = 'failed'
-
-    TASK_KEY = ".task"
-    COMPLETE_KEY = ".complete"
 
     def on_start_tasks(self, msg):
         """Entry method for TaskQueue. Creates tasks and puts task messages on the
@@ -53,7 +52,6 @@ class TaskQueue:
         tasks: [{'id': 'some_id', 'dependencies': ['some_id', 'some_other_id']}
         """
         tasks = msg['contents']['tasks']
-        dst_queue = msg['contents']['dst_queue']
         key_prefix = msg['contents']['key_prefix']
         extra_msg = msg['contents']['extra_msg']
         job, step = get_job_step(jobid, stepid)
@@ -62,7 +60,7 @@ class TaskQueue:
             raise GOBException(f"No jobstep found with id {stepid}")
 
         self._validate_dependencies(tasks)
-        self._create_tasks(jobid, stepid, process_id, tasks, dst_queue, key_prefix, extra_msg)
+        self._create_tasks(jobid, stepid, process_id, tasks, key_prefix, extra_msg)
         self._queue_free_tasks_for_jobstep(stepid)
 
     def _validate_dependencies(self, tasks):
@@ -85,13 +83,12 @@ class TaskQueue:
 
             done.append(task['id'])
 
-    def _create_tasks(self, jobid, stepid, process_id, tasks, dst_queue, key_prefix, extra_msg):
+    def _create_tasks(self, jobid, stepid, process_id, tasks, key_prefix, extra_msg):
         """Create Task objects for the input list 'tasks'.
 
         :param jobid:
         :param stepid:
         :param tasks:
-        :param dst_queue:
         :param key_prefix:
         :param extra_msg:
         :return:
@@ -106,7 +103,6 @@ class TaskQueue:
                 'status': self.STATUS_NEW,
                 'jobid': jobid,
                 'stepid': stepid,
-                'dst_queue': dst_queue,
                 'key_prefix': key_prefix,
                 'extra_msg': {
                     # Add global extra msg and extra_msg on task level
@@ -150,7 +146,7 @@ class TaskQueue:
                 'process_id': task.process_id,
             }
         }
-        publish(task.dst_queue, task.key_prefix + self.TASK_KEY, msg)
+        publish(WORKFLOW_EXCHANGE, task.key_prefix + '.' + TASK_REQUEST, msg)
 
         task_update({
             'status': self.STATUS_QUEUED,
@@ -237,4 +233,4 @@ class TaskQueue:
             }
         }
 
-        publish(task.dst_queue, task.key_prefix + self.COMPLETE_KEY, msg)
+        publish(WORKFLOW_EXCHANGE, task.key_prefix + '.' + TASK_COMPLETE, msg)
