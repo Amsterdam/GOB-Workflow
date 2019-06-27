@@ -7,6 +7,8 @@ from gobworkflow.task.queue import TaskQueue
 from gobcore.model.sa.management import Job, JobStep, Task
 from gobcore.exceptions import GOBException
 
+from gobcore.message_broker.config import WORKFLOW_EXCHANGE
+
 
 class TestTaskQueue(TestCase):
     stepid = 2490
@@ -27,7 +29,6 @@ class TestTaskQueue(TestCase):
             },
             'contents': {
                 'tasks': self.tasks,
-                'dst_queue': 'the.destination.queue',
                 'key_prefix': 'pref',
                 'extra_msg': {
                     'key': 'value'
@@ -63,8 +64,7 @@ class TestTaskQueue(TestCase):
 
         self.task_queue._validate_dependencies.assert_called_with(self.tasks)
         self.task_queue._create_tasks.assert_called_with(self.jobid, self.stepid, self.process_id, self.tasks,
-                                                         self.start_message['contents']['dst_queue'], 'pref',
-                                                         self.start_message['contents']['extra_msg'])
+                                                         'pref', self.start_message['contents']['extra_msg'])
         self.task_queue._queue_free_tasks_for_jobstep.assert_called_with(self.stepid)
 
     @patch("gobworkflow.task.queue.load_message")
@@ -95,14 +95,12 @@ class TestTaskQueue(TestCase):
     @patch("gobworkflow.task.queue.task_save")
     def test_create_tasks(self, mock_task_save, mock_get_tasks):
         mock_get_tasks.return_value = []
-        dst_queue = "some.dst.queue"
         key_prefix = "prefix",
         extra_msg = {"extra": "msg"}
 
         self.tasks[0]['extra_msg'] = {'extra2': 'fromtask'}
 
-        self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, self.tasks[:2], dst_queue, key_prefix,
-                                      extra_msg)
+        self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, self.tasks[:2], key_prefix, extra_msg)
 
         mock_task_save.assert_has_calls([
             call({
@@ -111,7 +109,6 @@ class TestTaskQueue(TestCase):
                 'status': self.task_queue.STATUS_NEW,
                 'jobid': self.jobid,
                 'stepid': self.stepid,
-                'dst_queue': dst_queue,
                 'key_prefix': key_prefix,
                 'extra_msg': {
                     'extra': 'msg',
@@ -125,7 +122,6 @@ class TestTaskQueue(TestCase):
                 'status': self.task_queue.STATUS_NEW,
                 'jobid': self.jobid,
                 'stepid': self.stepid,
-                'dst_queue': dst_queue,
                 'key_prefix': key_prefix,
                 'extra_msg': extra_msg,
                 'process_id': self.process_id,
@@ -134,13 +130,12 @@ class TestTaskQueue(TestCase):
 
         mock_get_tasks.assert_called_with(self.stepid)
 
-
     @patch("gobworkflow.task.queue.get_tasks_for_stepid")
     def test_create_tasks_existing_steps(self, mock_get_tasks):
         mock_get_tasks.return_value = [1, 2, 3]
 
         with self.assertRaises(AssertionError):
-            self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, [], '', '', {})
+            self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, [], '', {})
 
     @patch("gobworkflow.task.queue.get_tasks_for_stepid")
     @patch("gobworkflow.task.queue.task_lock")
@@ -180,13 +175,13 @@ class TestTaskQueue(TestCase):
     @patch("gobworkflow.task.queue.task_update")
     def test_queue_task(self, mock_update, mock_publish):
         task = Task(id=123, name='task name', jobid=self.jobid, stepid=self.stepid, extra_msg={'extra': 'msg'},
-                    dst_queue='destination.queue', key_prefix='prefix', process_id=self.process_id)
+                    key_prefix='prefix', process_id=self.process_id)
 
         with freeze_time():
             self.task_queue._queue_task(task)
             now = datetime.now()
 
-        mock_publish.assert_called_with(task.dst_queue, task.key_prefix + ".task", {
+        mock_publish.assert_called_with(WORKFLOW_EXCHANGE, task.key_prefix + ".task.request", {
             'extra': 'msg',
             'taskid': task.id,
             'id': task.name,
@@ -337,13 +332,13 @@ class TestTaskQueue(TestCase):
             Task(id=2, name='task2', status=self.task_queue.STATUS_NEW, summary=summary2),
         ]
 
-        task_arg = Task(stepid=self.stepid, jobid=self.jobid, dst_queue="dst.queue", key_prefix="prefix",
+        task_arg = Task(stepid=self.stepid, jobid=self.jobid, key_prefix="prefix",
                         extra_msg={'extra': 'msg'})
 
         self.task_queue._publish_complete(task_arg)
         mock_get_tasks.assert_called_with(task_arg.stepid)
 
-        mock_publish.assert_called_with(task_arg.dst_queue, task_arg.key_prefix + ".complete", {
+        mock_publish.assert_called_with(WORKFLOW_EXCHANGE, task_arg.key_prefix + ".task.complete", {
             'extra': 'msg',
             'header': {
                 'jobid': self.jobid,
