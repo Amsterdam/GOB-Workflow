@@ -56,15 +56,22 @@ class TestStart(TestCase):
         mock_start_workflow = mock.MagicMock()
         mock_argparse.return_value = MockArgumentParser()
         MockArgumentParser.arguments['command'] = 'import'
-        MockArgumentParser.arguments['dataset_file'] = ['dataset_file']
+        MockArgumentParser.arguments['catalogue'] = 'catalogue'
+        MockArgumentParser.arguments['collection'] = 'collection'
+        MockArgumentParser.arguments['application'] = 'application'
 
+        import_args = {
+            "catalogue": "catalogue",
+            "collection": "collection",
+            "application": "application"
+        }
         __main__.WorkflowCommands()
 
         mock_workflow.assert_called_with(IMPORT)
 
         instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with({'dataset': 'dataset_file'})
+        assert instance.start_new.call_count == 1
+        instance.start_new.assert_called_with(import_args)
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
@@ -86,8 +93,8 @@ class TestStart(TestCase):
         mock_workflow.assert_called_with(EXPORT)
 
         instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with(export_args)
+        assert instance.start_new.call_count == 1
+        instance.start_new.assert_called_with(export_args)
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
@@ -102,8 +109,8 @@ class TestStart(TestCase):
         mock_workflow.assert_called_with(RELATE)
 
         instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with({'catalogue': 'catalogue', 'collections': None})
+        assert instance.start_new.call_count == 1
+        instance.start_new.assert_called_with({'catalogue': 'catalogue', 'collections': None})
 
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
@@ -119,8 +126,8 @@ class TestStart(TestCase):
         mock_workflow.assert_called_with(RELATE)
 
         instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection'})
+        assert instance.start_new.call_count == 1
+        instance.start_new.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection'})
 
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
@@ -136,8 +143,8 @@ class TestStart(TestCase):
         mock_workflow.assert_called_with(RELATE)
 
         instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection1 collection2'})
+        assert instance.start_new.call_count == 1
+        instance.start_new.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection1 collection2'})
 
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
@@ -145,34 +152,19 @@ class TestStart(TestCase):
     def test_WorkflowCommands_prepare(self, mock_argparse, mock_workflow):
         mock_argparse.return_value = MockArgumentParser()
         MockArgumentParser.arguments['command'] = 'prepare'
-        MockArgumentParser.arguments['prepare_config'] = 'config.json'
+        MockArgumentParser.arguments['catalogue'] = 'catalogue'
 
         __main__.WorkflowCommands()
 
         mock_workflow.assert_called_with(IMPORT, IMPORT_PREPARE)
         instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with({'prepare_config': 'config.json'})
+        assert instance.start_new.call_count == 1
+        instance.start_new.assert_called_with({'catalogue': 'catalogue'})
 
 
     @mock.patch('gobworkflow.start.__main__.Workflow')
     @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_prepare_with_dataset(self, mock_argparse, mock_workflow):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'prepare'
-        MockArgumentParser.arguments['prepare_config'] = 'config.json'
-        MockArgumentParser.arguments['dataset'] = 'dataset.json'
-
-        __main__.WorkflowCommands()
-
-        mock_workflow.assert_called_with(IMPORT, IMPORT_PREPARE)
-        instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with({'prepare_config': 'config.json', 'dataset_file': 'dataset.json'})
-
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_prepare(self, mock_argparse, mock_workflow):
+    def test_WorkflowCommands_export_test(self, mock_argparse, mock_workflow):
         mock_argparse.return_value = MockArgumentParser()
         MockArgumentParser.arguments['command'] = 'export_test'
         MockArgumentParser.arguments['catalogue'] = 'any catalogue'
@@ -181,5 +173,5 @@ class TestStart(TestCase):
 
         mock_workflow.assert_called_with(EXPORT, EXPORT_TEST)
         instance = mock_workflow.return_value
-        assert instance.start.call_count == 1
-        instance.start.assert_called_with({'catalogue': 'any catalogue'})
+        assert instance.start_new.call_count == 1
+        instance.start_new.assert_called_with({'catalogue': 'any catalogue'})

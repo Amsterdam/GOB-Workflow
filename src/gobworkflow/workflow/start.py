@@ -43,8 +43,8 @@ def start_workflows(workflow_name, step_name, msg):
         # Construct the message from the given message, the contents is retrieved from the input message contents
         new_msg = {
             **msg,
-            'contents': content
         }
+        new_msg['header'].update(content)
         start_workflow(workflow_name, step_name, new_msg)
 
     step_status(jobid, stepid, STATUS_OK)

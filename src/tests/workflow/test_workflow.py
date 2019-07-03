@@ -57,6 +57,21 @@ class TestWorkflow(TestCase):
         job_start.assert_called_with("Workflow", {"header": {}, "summary": {}})
         step_start.assert_called_with("Step", {})
 
+    def test_start_new(self):
+        self.workflow.start = mock.MagicMock()
+        attrs = {
+            'h1': 'v1',
+            'h2': 'v2',
+        }
+        self.workflow.start_new(attrs)
+
+        self.workflow.start.assert_called_with({
+            'header': {
+                'h1': 'v1',
+                'h2': 'v2',
+            }
+        })
+
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")

@@ -26,6 +26,9 @@ class TestTaskQueue(TestCase):
                 'stepid': self.stepid,
                 'jobid': self.jobid,
                 'process_id': self.process_id,
+                'extra': {
+                    'extraheader': 'value',
+                }
             },
             'contents': {
                 'tasks': self.tasks,
@@ -64,7 +67,8 @@ class TestTaskQueue(TestCase):
 
         self.task_queue._validate_dependencies.assert_called_with(self.tasks)
         self.task_queue._create_tasks.assert_called_with(self.jobid, self.stepid, self.process_id, self.tasks,
-                                                         'pref', self.start_message['contents']['extra_msg'])
+                                                         'pref', self.start_message['contents']['extra_msg'],
+                                                         self.start_message['header']['extra'])
         self.task_queue._queue_free_tasks_for_jobstep.assert_called_with(self.stepid)
 
     @patch("gobworkflow.task.queue.load_message")
@@ -97,10 +101,12 @@ class TestTaskQueue(TestCase):
         mock_get_tasks.return_value = []
         key_prefix = "prefix",
         extra_msg = {"extra": "msg"}
+        extra_header = {"extra": "header"}
 
         self.tasks[0]['extra_msg'] = {'extra2': 'fromtask'}
 
-        self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, self.tasks[:2], key_prefix, extra_msg)
+        self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, self.tasks[:2], key_prefix, extra_msg,
+                                      extra_header)
 
         mock_task_save.assert_has_calls([
             call({
@@ -110,6 +116,7 @@ class TestTaskQueue(TestCase):
                 'jobid': self.jobid,
                 'stepid': self.stepid,
                 'key_prefix': key_prefix,
+                'extra_header': extra_header,
                 'extra_msg': {
                     'extra': 'msg',
                     'extra2': 'fromtask',
@@ -123,6 +130,7 @@ class TestTaskQueue(TestCase):
                 'jobid': self.jobid,
                 'stepid': self.stepid,
                 'key_prefix': key_prefix,
+                'extra_header': extra_header,
                 'extra_msg': extra_msg,
                 'process_id': self.process_id,
             })
@@ -135,7 +143,7 @@ class TestTaskQueue(TestCase):
         mock_get_tasks.return_value = [1, 2, 3]
 
         with self.assertRaises(AssertionError):
-            self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, [], '', {})
+            self.task_queue._create_tasks(self.jobid, self.stepid, self.process_id, [], '', {}, {})
 
     @patch("gobworkflow.task.queue.get_tasks_for_stepid")
     @patch("gobworkflow.task.queue.task_lock")
@@ -175,7 +183,7 @@ class TestTaskQueue(TestCase):
     @patch("gobworkflow.task.queue.task_update")
     def test_queue_task(self, mock_update, mock_publish):
         task = Task(id=123, name='task name', jobid=self.jobid, stepid=self.stepid, extra_msg={'extra': 'msg'},
-                    key_prefix='prefix', process_id=self.process_id)
+                    key_prefix='prefix', process_id=self.process_id, extra_header={'extra': 'header'})
 
         with freeze_time():
             self.task_queue._queue_task(task)
@@ -189,6 +197,7 @@ class TestTaskQueue(TestCase):
                 'jobid': task.jobid,
                 'stepid': task.stepid,
                 'process_id': task.process_id,
+                'extra': 'header',
             }
         })
 
@@ -333,7 +342,7 @@ class TestTaskQueue(TestCase):
         ]
 
         task_arg = Task(stepid=self.stepid, jobid=self.jobid, key_prefix="prefix",
-                        extra_msg={'extra': 'msg'})
+                        extra_msg={'extra': 'msg'}, extra_header={'extra': 'header'})
 
         self.task_queue._publish_complete(task_arg)
         mock_get_tasks.assert_called_with(task_arg.stepid)
@@ -343,6 +352,7 @@ class TestTaskQueue(TestCase):
             'header': {
                 'jobid': self.jobid,
                 'stepid': self.stepid,
+                'extra': 'header',
             },
             'summary': {
                 'warnings': ['w1', 'w2', 'w3'],
