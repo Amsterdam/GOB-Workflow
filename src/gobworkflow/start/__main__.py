@@ -43,33 +43,40 @@ The GOB workflow commands are:
 
     def prepare_command(self):
         parser = argparse.ArgumentParser(description='Start a prepare job for a collection')
-        parser.add_argument('prepare_config',
+        parser.add_argument('catalogue',
                             type=str,
-                            help='a file containing the prepare definition')
-        parser.add_argument('--dataset',
-                            type=str,
-                            help='a file containing the import definition')
+                            help='the name of the data catalog (example: "brk"')
         # Skip the first argument
         args = parser.parse_args(sys.argv[2:])
         start_args = {
-            "prepare_config": args.prepare_config,
+            'catalogue': args.catalogue,
         }
-        if hasattr(args, 'dataset') and args.dataset:
-            start_args['dataset_file'] = args.dataset
-        print(f"Trigger prepare of {args.prepare_config}")
-        Workflow(IMPORT, IMPORT_PREPARE).start(start_args)
+        Workflow(IMPORT, IMPORT_PREPARE).start_new(start_args)
 
     def import_command(self):
         parser = argparse.ArgumentParser(description='Start an import job for a collection')
-        parser.add_argument('dataset_file',
-                            nargs='+',
+        parser.add_argument('catalogue',
                             type=str,
-                            help='a file containing the dataset definition')
+                            help='the name of the data catalog (example: "meetbouten"')
+        parser.add_argument('collection',
+                            type=str,
+                            help='the name of the data collection (example: "metingen"')
+        parser.add_argument('application',
+                            type=str,
+                            nargs='?',
+                            help='the name of the application to import from')
+
         # Skip the first argument
         args = parser.parse_args(sys.argv[2:])
-        for dataset_file in args.dataset_file:
-            print(f"Trigger import of {dataset_file}")
-            Workflow(IMPORT).start({"dataset": dataset_file})
+        start_args = {
+            "catalogue": args.catalogue,
+            "collection": args.collection,
+        }
+
+        if args.application:
+            start_args['application'] = args.application
+
+        Workflow(IMPORT).start_new(start_args)
 
     def export_command(self):
         parser = argparse.ArgumentParser(description='Start an export job for a collection')
@@ -93,7 +100,7 @@ The GOB workflow commands are:
             "destination": args.destination
         }
         print(f"Trigger export of {args.catalogue}.{args.collection} on {args.destination}")
-        Workflow(EXPORT).start(export_args)
+        Workflow(EXPORT).start_new(export_args)
 
     def relate_command(self):
         parser = argparse.ArgumentParser(description='Build relations for a catalog')
@@ -111,7 +118,7 @@ The GOB workflow commands are:
         print(f"Trigger build relations for {args.catalogue} {collections}")
         # Relate expects a string of collections or None
         collections = collections if args.collections else None
-        Workflow(RELATE).start({"catalogue": args.catalogue, "collections": collections})
+        Workflow(RELATE).start_new({"catalogue": args.catalogue, "collections": collections})
 
     def export_test_command(self):
         parser = argparse.ArgumentParser(description='Test of exports for a catalog')
@@ -121,7 +128,7 @@ The GOB workflow commands are:
         # Skip the first argument
         args = parser.parse_args(sys.argv[2:])
         print(f"Trigger export test for {args.catalogue}")
-        Workflow(EXPORT, EXPORT_TEST).start({"catalogue": args.catalogue})
+        Workflow(EXPORT, EXPORT_TEST).start_new({"catalogue": args.catalogue})
 
 
 def init():

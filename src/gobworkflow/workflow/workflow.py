@@ -41,6 +41,9 @@ class Workflow():
         self._step_name = self._workflow[START] if step_name is None else step_name
         self._step = self._workflow[self._step_name]
 
+    def start_new(self, header_attrs: dict):
+        self.start({'header': {**header_attrs}})
+
     def start(self, msg):
         """
         Start a workflow

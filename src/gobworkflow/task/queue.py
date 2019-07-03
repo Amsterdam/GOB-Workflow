@@ -53,14 +53,15 @@ class TaskQueue:
         """
         tasks = msg['contents']['tasks']
         key_prefix = msg['contents']['key_prefix']
-        extra_msg = msg['contents']['extra_msg']
+        extra_msg = msg['contents'].get('extra_msg', {})
+        extra_header = msg['header'].get('extra', {})
         job, step = get_job_step(jobid, stepid)
 
         if not step:
             raise GOBException(f"No jobstep found with id {stepid}")
 
         self._validate_dependencies(tasks)
-        self._create_tasks(jobid, stepid, process_id, tasks, key_prefix, extra_msg)
+        self._create_tasks(jobid, stepid, process_id, tasks, key_prefix, extra_msg, extra_header)
         self._queue_free_tasks_for_jobstep(stepid)
 
     def _validate_dependencies(self, tasks):
@@ -83,7 +84,7 @@ class TaskQueue:
 
             done.append(task['id'])
 
-    def _create_tasks(self, jobid, stepid, process_id, tasks, key_prefix, extra_msg):
+    def _create_tasks(self, jobid, stepid, process_id, tasks, key_prefix, extra_msg, extra_header):
         """Create Task objects for the input list 'tasks'.
 
         :param jobid:
@@ -104,6 +105,9 @@ class TaskQueue:
                 'jobid': jobid,
                 'stepid': stepid,
                 'key_prefix': key_prefix,
+                'extra_header': {
+                    **extra_header,
+                },
                 'extra_msg': {
                     # Add global extra msg and extra_msg on task level
                     **extra_msg,
@@ -144,6 +148,7 @@ class TaskQueue:
                 'jobid': task.jobid,
                 'stepid': task.stepid,
                 'process_id': task.process_id,
+                **task.extra_header,
             }
         }
         publish(WORKFLOW_EXCHANGE, task.key_prefix + '.' + TASK_REQUEST, msg)
@@ -226,6 +231,7 @@ class TaskQueue:
             'header': {
                 'jobid': task.jobid,
                 'stepid': task.stepid,
+                **task.extra_header,
             },
             'summary': {
                 'warnings': warnings,
