@@ -1,8 +1,11 @@
 from unittest import TestCase, mock
+from unittest.mock import MagicMock, call
 
+from gobcore.workflow.start_commands import StartCommand, StartCommandArgument, NoSuchCommandException
 from gobworkflow.workflow.config import IMPORT, EXPORT, EXPORT_TEST, RELATE, IMPORT_PREPARE
 
 from gobworkflow.start import __main__
+from gobworkflow.start.__main__ import WorkflowCommands
 
 class Struct:
     def __init__(self, **entries):
@@ -32,146 +35,113 @@ class TestStart(TestCase):
             with mock.patch.object(__main__, "__name__", "__main__"):
                 __main__.init()
 
-    @mock.patch('gobworkflow.start.__main__.WorkflowCommands.import_command')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_valid_command(self, mock_argparse, mock_import):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'import'
-        __main__.WorkflowCommands()
+@mock.patch("argparse.ArgumentParser")
+@mock.patch("gobworkflow.start.__main__.StartCommands")
+class TestWorkflowCommands(TestCase):
 
-        mock_import.asset_called()
+    def _mock_start_commands(self):
+        mock = MagicMock()
 
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_invalid_command(self, mock_argparse):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'fake'
+        mock.get_all.return_value = {
+            'command_a': StartCommand('command_a', {'description': 'Description of command A', 'workflow': 'wf a'}),
+            'command_b': StartCommand('command_b', {'description': 'Description of command B', 'workflow': 'wf b'}),
+        }
+        return mock
+
+    @mock.patch("gobworkflow.start.__main__.WorkflowCommands.execute_command")
+    def test_init(self, mock_execute, mock_start_commands, mock_parser):
+        mock_start_commands.return_value = self._mock_start_commands()
+        mock_parser.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['command'] = 'command_a'
+        WorkflowCommands()
+
+        args, kwargs = mock_parser.call_args
+        self.assertTrue(f"{'command_a':16s}Description of command A" in kwargs['usage'])
+        self.assertTrue(f"{'command_b':16s}Description of command B" in kwargs['usage'])
+
+        mock_start_commands.return_value.get.assert_called_with('command_a')
+        mock_execute.assert_called_with(mock_start_commands.return_value.get.return_value)
+
+    def test_init_invalid_command(self, mock_start_commands, mock_parser):
+        mock_start_commands.return_value = self._mock_start_commands()
+        mock_start_commands.return_value.get.side_effect = NoSuchCommandException
+        mock_parser.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['command'] = 'nonexistent'
+
         with self.assertRaises(SystemExit) as cm:
-            __main__.WorkflowCommands()
+            WorkflowCommands()
 
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_import(self, mock_argparse, mock_workflow):
-        mock_start_workflow = mock.MagicMock()
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'import'
-        MockArgumentParser.arguments['catalogue'] = 'catalogue'
-        MockArgumentParser.arguments['collection'] = 'collection'
-        MockArgumentParser.arguments['application'] = 'application'
-
-        import_args = {
-            "catalogue": "catalogue",
-            "collection": "collection",
-            "application": "application"
-        }
-        __main__.WorkflowCommands()
-
-        mock_workflow.assert_called_with(IMPORT)
-
-        instance = mock_workflow.return_value
-        assert instance.start_new.call_count == 1
-        instance.start_new.assert_called_with(import_args)
-
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_export(self, mock_argparse, mock_workflow):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'export'
-        MockArgumentParser.arguments['catalogue'] = 'catalogue'
-        MockArgumentParser.arguments['collection'] = 'collection'
-        MockArgumentParser.arguments['destination'] = 'destination'
-
-        export_args = {
-            "catalogue": "catalogue",
-            "collection": "collection",
-            "destination": "destination"
+    @mock.patch("gobworkflow.start.__main__.WorkflowCommands.execute_command")
+    def test_extract_parser_arg_kwargs_minimal(self, mock_execute, mock_start_commands, mock_parser):
+        wfc = WorkflowCommands()
+        start_command_arg = StartCommandArgument({'name': 'command name'})
+        expected_result = {
+            'type': str,
+            'help': '',
+            'nargs': '?',
         }
 
-        __main__.WorkflowCommands()
+        self.assertEqual(expected_result, wfc._extract_parser_arg_kwargs(start_command_arg))
 
-        mock_workflow.assert_called_with(EXPORT)
+    @mock.patch("gobworkflow.start.__main__.WorkflowCommands.execute_command")
+    def test_extract_parser_arg_kwargs_maximal(self, mock_execute, mock_start_commands, mock_parser):
+        wfc = WorkflowCommands()
+        start_command_arg = StartCommandArgument({
+            'name': 'command name',
+            'default': 'default value',
+            'choices': ['a', 'b'],
+            'required': True,
+        })
 
-        instance = mock_workflow.return_value
-        assert instance.start_new.call_count == 1
-        instance.start_new.assert_called_with(export_args)
+        expected_result = {
+            'type': str,
+            'help': '',
+            'default': 'default value',
+            'choices': ['a', 'b']
+        }
 
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_relate(self, mock_argparse, mock_workflow):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'relate'
-        MockArgumentParser.arguments['catalogue'] = 'catalogue'
-        MockArgumentParser.arguments['collections'] = []
+        self.assertEqual(expected_result, wfc._extract_parser_arg_kwargs(start_command_arg))
 
-        __main__.WorkflowCommands()
+    @mock.patch("gobworkflow.start.__main__.WorkflowCommands.execute_command")
+    def test_parse_argument(self, mock_execute, mock_start_commands, mock_parser):
+        wfc = WorkflowCommands()
 
-        mock_workflow.assert_called_with(RELATE)
+        mock_parser.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['arg1'] = 'val1'
+        MockArgumentParser.arguments['arg2'] = 'val2'
+        wfc._extract_parser_arg_kwargs = MagicMock()
 
-        instance = mock_workflow.return_value
-        assert instance.start_new.call_count == 1
-        instance.start_new.assert_called_with({'catalogue': 'catalogue', 'collections': None})
+        start_command = StartCommand('command', {'workflow': 'theworkflow'})
+        start_command.args = [
+            StartCommandArgument({'name': 'arg1'}),
+            StartCommandArgument({'name': 'arg2'}),
+        ]
 
+        result = wfc._parse_arguments(start_command)
 
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_relate_single(self, mock_argparse, mock_workflow):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'relate'
-        MockArgumentParser.arguments['catalogue'] = 'catalogue'
-        MockArgumentParser.arguments['collections'] = ['collection']
+        self.assertEqual({
+            'arg1': 'val1',
+            'arg2': 'val2',
+        }, result)
 
-        __main__.WorkflowCommands()
+    @mock.patch("gobworkflow.start.__main__.Workflow")
+    def test_execute_command_without_step(self, mock_workflow, mock_start_commands, mock_parser):
+        wfc = WorkflowCommands()
+        wfc._parse_arguments = MagicMock()
+        start_command = StartCommand('command', {'workflow': 'theworkflow'})
 
-        mock_workflow.assert_called_with(RELATE)
+        wfc.execute_command(start_command)
+        mock_workflow.assert_called_with('theworkflow')
+        mock_workflow.return_value.start_new.assert_called_with(wfc._parse_arguments.return_value)
 
-        instance = mock_workflow.return_value
-        assert instance.start_new.call_count == 1
-        instance.start_new.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection'})
+    @mock.patch("gobworkflow.start.__main__.Workflow")
+    def test_execute_command_with_step(self, mock_workflow, mock_start_commands, mock_parser):
+        wfc = WorkflowCommands()
+        wfc._parse_arguments = MagicMock()
+        start_command = StartCommand('command', {'workflow': 'theworkflow', 'start_step': 'thestartstep'})
 
-
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_relate_multiple(self, mock_argparse, mock_workflow):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'relate'
-        MockArgumentParser.arguments['catalogue'] = 'catalogue'
-        MockArgumentParser.arguments['collections'] = ['collection1', 'collection2']
-
-        __main__.WorkflowCommands()
-
-        mock_workflow.assert_called_with(RELATE)
-
-        instance = mock_workflow.return_value
-        assert instance.start_new.call_count == 1
-        instance.start_new.assert_called_with({'catalogue': 'catalogue', 'collections': 'collection1 collection2'})
-
-
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_prepare(self, mock_argparse, mock_workflow):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'prepare'
-        MockArgumentParser.arguments['catalogue'] = 'catalogue'
-
-        __main__.WorkflowCommands()
-
-        mock_workflow.assert_called_with(IMPORT, IMPORT_PREPARE)
-        instance = mock_workflow.return_value
-        assert instance.start_new.call_count == 1
-        instance.start_new.assert_called_with({'catalogue': 'catalogue'})
-
-
-    @mock.patch('gobworkflow.start.__main__.Workflow')
-    @mock.patch('argparse.ArgumentParser')
-    def test_WorkflowCommands_export_test(self, mock_argparse, mock_workflow):
-        mock_argparse.return_value = MockArgumentParser()
-        MockArgumentParser.arguments['command'] = 'export_test'
-        MockArgumentParser.arguments['catalogue'] = 'any catalogue'
-
-        __main__.WorkflowCommands()
-
-        mock_workflow.assert_called_with(EXPORT, EXPORT_TEST)
-        instance = mock_workflow.return_value
-        assert instance.start_new.call_count == 1
-        instance.start_new.assert_called_with({'catalogue': 'any catalogue'})
+        wfc.execute_command(start_command)
+        mock_workflow.assert_called_with('theworkflow', 'thestartstep')
+        mock_workflow.return_value.start_new.assert_called_with(wfc._parse_arguments.return_value)
