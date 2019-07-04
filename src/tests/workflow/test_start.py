@@ -43,18 +43,18 @@ class TestStart(TestCase):
 
         msg = {
             'header': { 'jobid': 0, 'stepid': 0 },
-            'contents': [1, 2]
+            'contents': [{'extra': 'content'}, {'extra': 'content'}]
         }
         start.start_workflows(workflow, step, msg)
         for content in msg['contents']:
             expect_msg = {
-                'header': { 'jobid': 0, 'stepid': 0 },
-                'contents': content,
+                **msg,
                 'workflow': {
                     'workflow_name': workflow,
                     'step_name': step
                 }
             }
+            expect_msg['header'].update(content)
             mock_publish.assert_any_call(WORKFLOW_EXCHANGE, "workflow.request", expect_msg)
         self.assertEqual(mock_publish.call_count, len(msg['contents']))
 

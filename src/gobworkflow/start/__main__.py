@@ -8,120 +8,95 @@ Requires one or more catalogs to build relations to:
 import argparse
 import sys
 
+from gobcore.workflow.start_commands import StartCommands, StartCommand, NoSuchCommandException, StartCommandArgument
 from gobworkflow.storage.storage import connect
 from gobworkflow.workflow.workflow import Workflow
-from gobworkflow.workflow.config import IMPORT, EXPORT, EXPORT_TEST, RELATE, IMPORT_PREPARE
 
 
 class WorkflowCommands():
 
     def __init__(self):
+        start_commands = StartCommands()
+
+        usage = '''<command> [<args>]
+
+The GOB workflow commands are:'''
+
+        for name, command in start_commands.get_all().items():
+            usage += f'''
+    {name:16s}{command.description}'''
+
         parser = argparse.ArgumentParser(
             prog='python -m gobworkflow.start',
             description='Start GOB Jobs',
             epilog='Generieke Ontsluiting Basisregistraties',
-            usage='''<command> [<args>]
-
-The GOB workflow commands are:
-   import       Start an import job for a collection
-   export       Start an export job for a collection
-   export_test  Start tests of exports for a collection
-   relate       Build relations for a catalog
-   prepare      Prepare a dataset for import
-''')
-        parser.add_argument('command', help='Subcommand to run')
-        # parse_args defaults to [1:] for args, but you need to
-        # exclude the rest of the args too, or validation will fail
+            usage=usage
+        )
+        parser.add_argument('command', help='Command to run')
         args = parser.parse_args(sys.argv[1:2])
-        command = f"{args.command}_command"
-        if not hasattr(self, command):
+
+        try:
+            command = start_commands.get(args.command)
+            self.execute_command(command)
+        except NoSuchCommandException:
             print("Unrecognized command")
             parser.print_help()
             exit(1)
-        # use dispatch pattern to invoke method with same name
-        getattr(self, command)()
 
-    def prepare_command(self):
-        parser = argparse.ArgumentParser(description='Start a prepare job for a collection')
-        parser.add_argument('prepare_config',
-                            type=str,
-                            help='a file containing the prepare definition')
-        parser.add_argument('--dataset',
-                            type=str,
-                            help='a file containing the import definition')
-        # Skip the first argument
-        args = parser.parse_args(sys.argv[2:])
-        start_args = {
-            "prepare_config": args.prepare_config,
+    def _extract_parser_arg_kwargs(self, arg: StartCommandArgument):
+        kwargs = {
+            'type': str,
+            'help': arg.description,
         }
-        if hasattr(args, 'dataset') and args.dataset:
-            start_args['dataset_file'] = args.dataset
-        print(f"Trigger prepare of {args.prepare_config}")
-        Workflow(IMPORT, IMPORT_PREPARE).start(start_args)
 
-    def import_command(self):
-        parser = argparse.ArgumentParser(description='Start an import job for a collection')
-        parser.add_argument('dataset_file',
-                            nargs='+',
-                            type=str,
-                            help='a file containing the dataset definition')
-        # Skip the first argument
-        args = parser.parse_args(sys.argv[2:])
-        for dataset_file in args.dataset_file:
-            print(f"Trigger import of {dataset_file}")
-            Workflow(IMPORT).start({"dataset": dataset_file})
+        if not arg.required:
+            kwargs['nargs'] = '?'
 
-    def export_command(self):
-        parser = argparse.ArgumentParser(description='Start an export job for a collection')
-        parser.add_argument('catalogue',
-                            type=str,
-                            help='the name of the data catalog (example: "meetbouten"')
-        parser.add_argument('collection',
-                            type=str,
-                            help='the name of the data collection (example: "metingen"')
-        parser.add_argument('destination',
-                            nargs='?',
-                            type=str,
-                            default="Objectstore",
-                            choices=["Objectstore", "File"],
-                            help='destination, default is Objectstore')
-        # Skip the first argument
-        args = parser.parse_args(sys.argv[2:])
-        export_args = {
-            "catalogue": args.catalogue,
-            "collection": args.collection,
-            "destination": args.destination
-        }
-        print(f"Trigger export of {args.catalogue}.{args.collection} on {args.destination}")
-        Workflow(EXPORT).start(export_args)
+        if arg.default:
+            kwargs['default'] = arg.default
 
-    def relate_command(self):
-        parser = argparse.ArgumentParser(description='Build relations for a catalog')
-        parser.add_argument('catalogue',
-                            type=str,
-                            help='the name of the data catalog (example: "meetbouten"')
-        parser.add_argument('collections',
-                            nargs='*',
-                            type=str,
-                            default='',
-                            help='a space separated list of collections (example: "meetbouten metingen"')
-        # Skip the first argument
-        args = parser.parse_args(sys.argv[2:])
-        collections = ' '.join(args.collections)
-        print(f"Trigger build relations for {args.catalogue} {collections}")
-        # Relate expects a string of collections or None
-        collections = collections if args.collections else None
-        Workflow(RELATE).start({"catalogue": args.catalogue, "collections": collections})
+        if arg.choices:
+            kwargs['choices'] = arg.choices
 
-    def export_test_command(self):
-        parser = argparse.ArgumentParser(description='Test of exports for a catalog')
-        parser.add_argument('catalogue',
-                            type=str,
-                            help='the name of the data catalog (example: "meetbouten"')
-        # Skip the first argument
-        args = parser.parse_args(sys.argv[2:])
-        print(f"Trigger export test for {args.catalogue}")
-        Workflow(EXPORT, EXPORT_TEST).start({"catalogue": args.catalogue})
+        return kwargs
+
+    def _parse_arguments(self, command: StartCommand):
+        """Parse and validate arguments
+
+        :param command:
+        :return:
+        """
+        parser = argparse.ArgumentParser(description=command.description)
+
+        names = []
+        for arg in command.args:
+            kwargs = self._extract_parser_arg_kwargs(arg)
+
+            parser.add_argument(arg.name, **kwargs)
+            names.append(arg.name)
+
+        input_args = parser.parse_args(sys.argv[2:])
+
+        input_values = {}
+        for name in names:
+            if getattr(input_args, name):
+                input_values[name] = getattr(input_args, name)
+
+        return input_values
+
+    def execute_command(self, command: StartCommand):
+        """Executes input command
+
+        :param command:
+        :return:
+        """
+        input_args = self._parse_arguments(command)
+        args = [command.workflow]
+
+        if command.start_step:
+            args.append(command.start_step)
+
+        Workflow(*args).start_new(input_args)
 
 
 def init():
