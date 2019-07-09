@@ -58,6 +58,20 @@ class TestMain(TestCase):
             'anything': 'any value'
         })
         self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'jobid': 'any job', 'stepid': 'any step' }})
+        mock_workflow.assert_called_with('any workflow', 'any step')
+
+        __main__.start_workflow({
+            'workflow': {
+                'workflow_name': 'any workflow',
+            },
+            'header': {
+                'jobid': 'any job',
+                'stepid': 'any step'
+            },
+            'anything': 'any value'
+        })
+        self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'jobid': 'any job', 'stepid': 'any step' }})
+        mock_workflow.assert_called_with('any workflow')
 
         __main__.on_workflow_progress({"jobid": "any job", "stepid": "any step", "status": "any status"})
         mock_status.assert_called_with("any job", "any step", "any status")
