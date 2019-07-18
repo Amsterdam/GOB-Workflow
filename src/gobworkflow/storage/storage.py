@@ -240,6 +240,21 @@ def _update_servicetasks(service, tasks):
 
 
 @session_auto_reconnect
+def job_runs(jobinfo):
+    job = session.query(Job)\
+        .filter(Job.name == jobinfo['name'])\
+        .filter(Job.end == None)\
+        .order_by(Job.start.desc())\
+        .first()  # noqa E711 (== None)
+    if job is None:
+        return False
+    else:
+        # Consider jobs of less than 12 hours old as still running
+        duration = datetime.datetime.now() - job.start
+        return duration.seconds < 12 * 60 * 60
+
+
+@session_auto_reconnect
 def job_save(job_info):
     """
     Create Job using the information in job_info and store it
