@@ -252,9 +252,8 @@ def job_runs(jobinfo):
     else:
         # Consider jobs of less than 12 hours old as still running
         duration = datetime.datetime.now() - job.start
-        zombie = duration.seconds >= 12 * 60 * 60
-        if not zombie:
-            print("Found already running job", job.id, job.start, duration)
+        zombie = duration.total_seconds() >= (12 * 60 * 60)
+        print("Found already running job", job.id, job.start, duration, zombie)
         return not zombie
 
 
