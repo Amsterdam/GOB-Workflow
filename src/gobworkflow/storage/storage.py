@@ -242,6 +242,7 @@ def _update_servicetasks(service, tasks):
 @session_auto_reconnect
 def job_runs(jobinfo):
     job = session.query(Job)\
+        .filter(Job.id != jobinfo['id'])\
         .filter(Job.name == jobinfo['name'])\
         .filter(Job.end == None)\
         .order_by(Job.start.desc())\
@@ -251,7 +252,10 @@ def job_runs(jobinfo):
     else:
         # Consider jobs of less than 12 hours old as still running
         duration = datetime.datetime.now() - job.start
-        return duration.seconds < 12 * 60 * 60
+        zombie = duration.seconds >= 12 * 60 * 60
+        if not zombie:
+            print("Found already running job", job.id, job.start, duration)
+        return not zombie
 
 
 @session_auto_reconnect
