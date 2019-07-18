@@ -55,11 +55,11 @@ class Workflow():
             msg["header"] = {}
         job = job_start(self._workflow_name, msg)
         if job_runs(job):
-            self.reject(msg, job)
+            self.reject(self._workflow_name, msg, job)
         else:
             self._function(self._step_name)(msg)
 
-    def reject(self, msg, job):
+    def reject(self, action, msg, job):
         """
         Reject a message because the job is already active within GOB
 
@@ -72,8 +72,8 @@ class Workflow():
         msg["header"]["entity"] = msg["header"].get('collection')
         step = step_start("accept", msg['header'])
         step_status(job['id'], step['id'], STATUS_START)
-        logger.configure(msg, "WORKFLOW")
-        logger.error("Job start rejected, job is already active")
+        logger.configure(msg, action.upper())
+        logger.error(f"Job {action} start rejected, job is already active")
         # End the workflow step and then the workflow job
         step_status(job['id'], step['id'], "rejected")
         job_end(job['id'], "rejected")
