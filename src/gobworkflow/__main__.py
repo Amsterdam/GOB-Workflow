@@ -52,11 +52,15 @@ def start_workflow(msg):
     """
     # Retrieve the workflow parameters
     workflow_name = msg['workflow']['workflow_name']
-    step_name = msg['workflow']['step_name']
+    step_name = msg['workflow'].get('step_name')
     # Delete the parameters so that they do not get transferred in the workflow
     del msg['workflow']
+
     # Start the workflow with the given message
-    Workflow(workflow_name, step_name).start(msg)
+    if step_name:
+        Workflow(workflow_name, step_name).start(msg)
+    else:
+        Workflow(workflow_name).start(msg)
 
 
 def on_workflow_progress(msg):

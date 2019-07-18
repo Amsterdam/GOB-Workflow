@@ -27,7 +27,7 @@ def job_start(job_name, msg):
     """
     timestamp = _timestamp()
     # Concatenate all the non-header fields
-    args = [str(val) for key, val in msg.items() if key != "header"]
+    args = [str(val) for key, val in sorted(msg.get('header', {}).items())]
     job_info = {
         "name": f"{job_name}.{'.'.join(args)}",
         "type": job_name,
@@ -44,7 +44,7 @@ def job_start(job_name, msg):
     return job_info
 
 
-def job_end(id):
+def job_end(id, status="ended"):
     """
     End a job
 
@@ -58,7 +58,7 @@ def job_end(id):
     job_info = {
         "id": id,
         "end": timestamp,
-        "status": "ended"
+        "status": status
     }
     job_update(job_info)
     return job_info
