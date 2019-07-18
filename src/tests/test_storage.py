@@ -1,5 +1,6 @@
 from unittest import TestCase, mock
 
+import datetime
 from sqlalchemy.exc import DBAPIError
 
 from gobcore.model.sa.management import Job, JobStep, Task
@@ -8,7 +9,7 @@ import gobworkflow.storage
 
 from gobworkflow.storage.storage import connect, disconnect, is_connected
 from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, _update_servicetasks
-from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step
+from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs
 from gobworkflow.storage.storage import task_get, task_save, task_update, task_lock, task_unlock, get_tasks_for_stepid
 
 class MockedService:
@@ -62,6 +63,9 @@ class MockedSession:
 
     def add(self, anyObject):
         self._add = anyObject
+        return self
+
+    def order_by(self, *args, **kwargs):
         return self
 
     def delete(self, anyObject=None):
@@ -349,3 +353,31 @@ class TestStorage(TestCase):
         result = get_tasks_for_stepid("someid")
         self.assertEqual({"stepid": "someid"}, mock_session.filter_kwargs)
         self.assertEqual(['a', 'b'], result)
+
+class TestJobRuns(TestCase):
+
+    @mock.patch('gobworkflow.storage.storage.session')
+    def test_job_runs(self, mock_session):
+        session = MockedSession()
+        mock_session.query.return_value = session
+
+        session._first = None
+        result = job_runs({'name': 'any name'})
+        self.assertEqual(result, False)
+
+        class Job:
+            def __init__(self, start):
+                self.start = start
+
+        job = Job( datetime.datetime.now())
+        session._first = job
+        result = job_runs({'name': 'any name'})
+        self.assertEqual(result, True)
+
+        job.start = datetime.datetime.now() - datetime.timedelta(hours=11)
+        result = job_runs({'name': 'any name'})
+        self.assertEqual(result, True)
+
+        job.start = datetime.datetime.now() - datetime.timedelta(hours=12)
+        result = job_runs({'name': 'any name'})
+        self.assertEqual(result, False)

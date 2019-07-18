@@ -18,7 +18,7 @@ class TestJobManagement(TestCase):
     @mock.patch("gobworkflow.workflow.jobs.job_save")
     def test_job_start(self, job_save):
         job_save.return_value = Job("any id")
-        job = job_start("any job", {"header": {}, "a": 1, "b": "string", "c": True})
+        job = job_start("any job", {"header": {"a": 1, "b": "string", "c": True}})
         self.assertEqual(job["name"], "any job.1.string.True")
         self.assertEqual(job["type"], "any job")
         self.assertEqual(job["args"], ["1", "string", "True"])

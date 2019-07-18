@@ -48,6 +48,7 @@ class TestWorkflow(TestCase):
     def test_create(self):
         self.assertIsNotNone(self.workflow)
 
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j: False)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start(self, job_start, step_start):
@@ -73,6 +74,17 @@ class TestWorkflow(TestCase):
         })
 
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j: True)
+    @mock.patch("gobworkflow.workflow.workflow.step_start")
+    @mock.patch("gobworkflow.workflow.workflow.job_start")
+    def test_start_and_end_job_runs(self, job_start, step_start):
+        WORKFLOWS["Workflow"]["Step"]["function"] = lambda _ : END_OF_WORKFLOW
+        self.workflow.start({})
+        job_start.assert_called_with("Workflow", {'header': {'process_id': mock.ANY, 'entity': None}})
+        step_start.assert_called_with('accept', {'process_id': mock.ANY, 'entity': None})
+
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j: False)
+    @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start_and_end(self, job_start, step_start):
@@ -81,6 +93,7 @@ class TestWorkflow(TestCase):
         job_start.assert_called_with("Workflow", {"header": {}, "summary": {}})
         step_start.assert_called_with("Step", {})
 
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j: False)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start_with_contents(self, job_start, step_start):
