@@ -361,23 +361,26 @@ class TestJobRuns(TestCase):
         session = MockedSession()
         mock_session.query.return_value = session
 
+        job_info = {'id': 'any id', 'name': 'any name'}
+
         session._first = None
-        result = job_runs({'name': 'any name'})
+        result = job_runs(job_info)
         self.assertEqual(result, False)
 
         class Job:
             def __init__(self, start):
                 self.start = start
+                self.id = 'any id'
 
         job = Job( datetime.datetime.now())
         session._first = job
-        result = job_runs({'name': 'any name'})
+        result = job_runs(job_info)
         self.assertEqual(result, True)
 
         job.start = datetime.datetime.now() - datetime.timedelta(hours=11)
-        result = job_runs({'name': 'any name'})
+        result = job_runs(job_info)
         self.assertEqual(result, True)
 
         job.start = datetime.datetime.now() - datetime.timedelta(hours=12)
-        result = job_runs({'name': 'any name'})
+        result = job_runs(job_info)
         self.assertEqual(result, False)
