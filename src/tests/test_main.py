@@ -1,3 +1,5 @@
+import sys
+
 from unittest import TestCase, mock
 
 from gobcore.status.heartbeat import STATUS_FAIL
@@ -24,10 +26,29 @@ class TestMain(TestCase):
     @mock.patch('gobworkflow.workflow.workflow.Workflow')
     def test_main(self, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
 
+        # Without command line arguments
+        sys.argv = ['python -m gobworkflow']
+
         from gobworkflow import __main__
 
         # Should connect to the storage
-        mock_connect.assert_called()
+        mock_connect.assert_called_with(migrate=False)
+
+    @mock.patch('gobcore.logging.logger.logger', mock.MagicMock())
+    @mock.patch('gobcore.message_broker.messagedriven_service.messagedriven_service')
+    @mock.patch('gobworkflow.storage.storage.connect')
+    @mock.patch('gobworkflow.storage.storage.get_job_step')
+    @mock.patch('gobworkflow.workflow.jobs.step_status')
+    @mock.patch('gobworkflow.workflow.workflow.Workflow')
+    def test_main(self, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
+
+        # With command line arguments
+        sys.argv = ['python -m gobworkflow', '--migrate']
+
+        from gobworkflow import __main__
+
+        # Should connect to the storage
+        mock_connect.assert_called_with(migrate=True)
         # Should start as a service
         mock_messagedriven_service.assert_called_with(__main__.SERVICEDEFINITION,
                                                  "Workflow",

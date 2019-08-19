@@ -23,7 +23,7 @@ session = None
 engine = None
 
 
-def connect():
+def connect(migrate=False):
     """Module initialisation
 
     The connection with the underlying storage is initialised.
@@ -34,15 +34,15 @@ def connect():
     """
     global session, engine
 
-    # Database migrations are handled by alembic
-    # alembic upgrade head
-    alembicArgs = [
-        '--raiseerr',
-        'upgrade', 'head',
-    ]
-
     try:
-        alembic.config.main(argv=alembicArgs)
+        if migrate:
+            # Database migrations are handled by alembic
+            # alembic upgrade head
+            alembicArgs = [
+                '--raiseerr',
+                'upgrade', 'head',
+            ]
+            alembic.config.main(argv=alembicArgs)
 
         engine = create_engine(URL(**GOB_MGMT_DB))
 
