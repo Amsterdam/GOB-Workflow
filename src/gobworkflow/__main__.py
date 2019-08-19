@@ -127,10 +127,15 @@ parser.add_argument('--migrate',
                     help='migrate the management database')
 args = parser.parse_args()
 
-connect(migrate=args.migrate)
+if args.migrate:
+    print("Start migration")
+    connect(migrate=True)
+    print("End migratiion")
+else:
+    connect()
 
-params = {
-    "prefetch_count": 1,
-    "load_message": False
-}
-messagedriven_service(SERVICEDEFINITION, "Workflow", params)
+    params = {
+        "prefetch_count": 1,
+        "load_message": False
+    }
+    messagedriven_service(SERVICEDEFINITION, "Workflow", params)

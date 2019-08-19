@@ -1,4 +1,5 @@
 import sys
+import importlib
 
 from unittest import TestCase, mock
 
@@ -24,15 +25,16 @@ class TestMain(TestCase):
     @mock.patch('gobworkflow.storage.storage.get_job_step')
     @mock.patch('gobworkflow.workflow.jobs.step_status')
     @mock.patch('gobworkflow.workflow.workflow.Workflow')
-    def test_main(self, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
+    def test_migrate(self, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
 
         # Without command line arguments
-        sys.argv = ['python -m gobworkflow']
+        sys.argv = ['python -m gobworkflow', '--migrate']
 
         from gobworkflow import __main__
+        importlib.reload(__main__)
 
         # Should connect to the storage
-        mock_connect.assert_called_with(migrate=False)
+        mock_connect.assert_called_with(migrate=True)
 
     @mock.patch('gobcore.logging.logger.logger', mock.MagicMock())
     @mock.patch('gobcore.message_broker.messagedriven_service.messagedriven_service')
@@ -43,12 +45,13 @@ class TestMain(TestCase):
     def test_main(self, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
 
         # With command line arguments
-        sys.argv = ['python -m gobworkflow', '--migrate']
+        sys.argv = ['python -m gobworkflow']
 
         from gobworkflow import __main__
+        importlib.reload(__main__)
 
         # Should connect to the storage
-        mock_connect.assert_called_with(migrate=True)
+        mock_connect.assert_called_with()
         # Should start as a service
         mock_messagedriven_service.assert_called_with(__main__.SERVICEDEFINITION,
                                                  "Workflow",
