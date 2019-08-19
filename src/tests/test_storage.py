@@ -128,7 +128,7 @@ class TestStorage(TestCase):
     def test_connect(self, mock_create, mock_alembic):
         mock_alembic.main = mock.MagicMock()
 
-        result = connect()
+        result = connect(migrate=True)
 
         mock_create.assert_called()
         mock_alembic.main.assert_called()
@@ -142,7 +142,7 @@ class TestStorage(TestCase):
         # Operation errors should be catched
         mock_alembic.main = lambda argv: raise_exception(MockException)
 
-        result = connect()
+        result = connect(migrate=True)
 
         self.assertEqual(result, False)
         self.assertEqual(is_connected(), False)
@@ -154,7 +154,7 @@ class TestStorage(TestCase):
         mock_alembic.main = lambda argv: raise_exception(MockException)
 
         with self.assertRaises(MockException):
-            connect()
+            connect(migrate=True)
 
     @mock.patch("gobworkflow.storage.storage.engine.dispose")
     @mock.patch("gobworkflow.storage.storage.session.close")

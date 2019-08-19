@@ -7,6 +7,8 @@ Workflow messages consist of proposals. A proposal is evaluated (for now always 
 to the service that can handle the proposal.
 
 """
+import argparse
+
 from gobcore.status.heartbeat import STATUS_OK, STATUS_FAIL
 from gobcore.message_broker.config import HEARTBEAT_QUEUE, TASK_QUEUE, TASK_RESULT_QUEUE, PROGRESS_QUEUE, \
     WORKFLOW_QUEUE
@@ -114,7 +116,19 @@ SERVICEDEFINITION = {
     },
 }
 
-connect()
+parser = argparse.ArgumentParser(
+    prog="python -m gobworkflow",
+    description="GOB Workflow manager"
+)
+
+parser.add_argument('--migrate',
+                    action='store_true',
+                    default=False,
+                    help='migrate the management database')
+args = parser.parse_args()
+
+connect(migrate=args.migrate)
+
 params = {
     "prefetch_count": 1,
     "load_message": False
