@@ -23,7 +23,19 @@ is required to run this component.
 
 ```bash
 docker-compose build
+
+export GOBOPTIONS=--migrate
+echo "Migrate database to latest version..."
+docker-compose up
+export GOBOPTIONS=
+
 docker-compose up &
+```
+
+### Workflow commands
+
+```bash
+docker exec gobworkflow python -m gobworkflow.start -h
 ```
 
 ## Tests
@@ -55,13 +67,20 @@ Or activate the previously created virtual environment
 source venv/bin/activate
 ```
     
-# Run
+## Run
 
 Start the service:
 
 ```bash
 cd src
+python -m gobworkflow --migrate
 python -m gobworkflow
+```
+
+### Workflow commands to trigger jobs
+
+```bash
+python -m gobworkflow.start -h
 ```
 
 ## Tests
@@ -71,4 +90,14 @@ Run the tests:
 ```bash
 cd src
 sh test.sh
+```
+
+# Workflow commands
+
+Workflow commands that do not rely on secure data sources are for example:
+
+```bash
+... import test_catalogue test_entity ADD
+... export test_catalogue test_entity File
+... relate test_catalogue
 ```

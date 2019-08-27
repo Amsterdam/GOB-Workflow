@@ -19,4 +19,5 @@ COPY gobworkflow gobworkflow
 COPY alembic alembic
 COPY alembic.ini alembic.ini
 
-CMD ["python3", "-m", "gobworkflow"]
+# Set GOBOPTIONS=--migrate to run migrations and then exit
+CMD python3 -m gobworkflow $GOBOPTIONS
