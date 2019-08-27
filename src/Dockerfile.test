@@ -1,6 +1,9 @@
 FROM amsterdam/docker_python:latest
 MAINTAINER datapunt@amsterdam.nl
 
+# Copy .jenkins scripts to where jenkins / ansible expect them
+COPY .jenkins /.jenkins
+
 # Install gobworkflow in /app folder
 WORKDIR /app
 
@@ -17,6 +20,3 @@ COPY tests tests
 
 # Copy tests
 COPY test.sh .flake8 ./
-
-# Copy jenkins files
-COPY .jenkins /.jenkins
