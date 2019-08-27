@@ -1,9 +1,8 @@
 """Start relate jobs
 
-Requires one or more catalogs to build relations to:
+Requires one or more catalogs to build relations to, e.g.:
 
-     python -m gobworkflow.start meetbouten
-     python -m gobworkflow.start meetbouten nap
+     python -m gobworkflow.start import meetbouten meetbouten
 """
 import argparse
 import sys
