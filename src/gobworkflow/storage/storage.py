@@ -214,6 +214,9 @@ def _update_servicetasks(service, tasks):
     :param tasks:
     :return:
     """
+    # Update db and refresh model
+    session.commit()
+
     # Remove any dangling tasks
     session.query(ServiceTask).filter(ServiceTask.service_id == None).delete()  # noqa: E711
     session.commit()
