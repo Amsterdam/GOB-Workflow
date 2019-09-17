@@ -216,6 +216,7 @@ def _update_servicetasks(service, tasks):
     """
     # Remove any dangling tasks
     session.query(ServiceTask).filter(ServiceTask.service_id == None).delete()  # noqa: E711
+    session.commit()
 
     # Get currently registered tasks for the service
     current_tasks = session.query(ServiceTask).filter(ServiceTask.service_id == service.id).all()
@@ -225,6 +226,7 @@ def _update_servicetasks(service, tasks):
         matches = [t for t in tasks if t["name"] == task.name]
         if len(matches) == 0:
             session.delete(task)
+            session.commit()
 
     # Add or update tasks that are active
     for task in tasks:
