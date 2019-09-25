@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from gobcore.typesystem.json import GobTypeJSONEncoder
 
-from gobcore.model.sa.management import Base, Job, JobStep, Log, Service, ServiceTask, Task
+from gobcore.model.sa.management import Base, Job, JobStep, Log, Service, ServiceTask, Task, AuditLog
 
 from gobworkflow.config import GOB_MGMT_DB
 from gobworkflow.storage.auto_reconnect_wrapper import auto_reconnect_wrapper
@@ -126,6 +126,19 @@ def save_log(msg):
         jobid=msg.get('jobid', None),
         stepid=msg.get('stepid', None),
         data=json_data,
+    )
+    session.add(record)
+    session.commit()
+
+
+@session_auto_reconnect
+def save_audit_log(msg):
+    record = AuditLog(
+        timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'),
+        source=msg.get('source'),
+        destination=msg.get('destination'),
+        type=msg.get('type'),
+        data=msg.get('data'),
     )
     session.add(record)
     session.commit()
