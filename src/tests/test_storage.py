@@ -8,7 +8,8 @@ from gobcore.model.sa.management import Job, JobStep, Task
 import gobworkflow.storage
 
 from gobworkflow.storage.storage import connect, disconnect, is_connected
-from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, _update_servicetasks
+from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, \
+    _update_servicetasks, save_audit_log
 from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs
 from gobworkflow.storage.storage import task_get, task_save, task_update, task_lock, task_unlock, get_tasks_for_stepid
 
@@ -212,6 +213,32 @@ class TestStorage(TestCase):
 
         mock_add.assert_called_with(mock.ANY)
         mock_commit.assert_called_with()
+
+    @mock.patch("gobworkflow.storage.storage.session")
+    @mock.patch("gobworkflow.storage.storage.datetime.datetime")
+    @mock.patch("gobworkflow.storage.storage.AuditLog")
+    def test_save_audit_log(self, mock_audit_log, mock_datetime, mock_session):
+        msg = {
+            'timestamp': 'the timestamp',
+            'source': 'the source',
+            'destination': 'the destination',
+            'type': 'the type',
+            'data': 'the data',
+        }
+
+        save_audit_log(msg)
+
+        mock_audit_log.assert_called_with(
+            timestamp=mock_datetime.strptime.return_value,
+            source='the source',
+            destination='the destination',
+            type='the type',
+            data='the data',
+        )
+
+        mock_session.add.assert_called_with(mock_audit_log.return_value)
+        mock_session.commit_assert_called_once()
+
 
     def test_update_servicetasks(self):
         gobworkflow.storage.storage.Service = MockedService

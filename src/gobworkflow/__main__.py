@@ -12,11 +12,11 @@ import argparse
 from gobcore.status.heartbeat import STATUS_OK, STATUS_FAIL
 from gobcore.message_broker.config import HEARTBEAT_QUEUE, TASK_QUEUE, TASK_RESULT_QUEUE, PROGRESS_QUEUE, \
     WORKFLOW_QUEUE
-from gobcore.message_broker.config import JOBSTEP_RESULT_QUEUE, LOG_QUEUE
+from gobcore.message_broker.config import JOBSTEP_RESULT_QUEUE, LOG_QUEUE, AUDIT_LOG_QUEUE
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 from gobcore.logging.logger import logger
 
-from gobworkflow.storage.storage import connect, save_log
+from gobworkflow.storage.storage import connect, save_log, save_audit_log
 from gobworkflow.workflow.jobs import step_status
 from gobworkflow.workflow.workflow import Workflow
 from gobworkflow.heartbeats import on_heartbeat
@@ -97,6 +97,10 @@ SERVICEDEFINITION = {
     'save_logs': {
         'queue': LOG_QUEUE,
         'handler': save_log
+    },
+    'save_audit_logs': {
+        'queue': AUDIT_LOG_QUEUE,
+        'handler': save_audit_log,
     },
     'heartbeat_monitor': {
         'queue': HEARTBEAT_QUEUE,
