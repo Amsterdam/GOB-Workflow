@@ -224,6 +224,7 @@ class TestStorage(TestCase):
             'destination': 'the destination',
             'type': 'the type',
             'data': 'the data',
+            'request_uuid': 'the uuid',
         }
 
         save_audit_log(msg)
@@ -234,6 +235,7 @@ class TestStorage(TestCase):
             destination='the destination',
             type='the type',
             data='the data',
+            request_uuid='the uuid',
         )
 
         mock_session.add.assert_called_with(mock_audit_log.return_value)

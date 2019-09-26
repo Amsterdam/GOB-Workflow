@@ -139,6 +139,7 @@ def save_audit_log(msg):
         destination=msg.get('destination'),
         type=msg.get('type'),
         data=msg.get('data'),
+        request_uuid=msg.get('request_uuid'),
     )
     session.add(record)
     session.commit()
