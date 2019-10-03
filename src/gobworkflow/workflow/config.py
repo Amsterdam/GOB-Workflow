@@ -22,6 +22,8 @@ START = "start"  # workflow[START] is the name of the first step in a workflow
 IMPORT = "import"
 IMPORT_PREPARE = "prepare"
 IMPORT_READ = "read"
+UPDATE_MODEL = "update_model"
+APPLY_EVENTS = "apply events"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
 IMPORT_WORKFLOWS = "import_workflows"
@@ -55,6 +57,12 @@ WORKFLOWS = {
     #         ],
     #     }
     # },
+    UPDATE_MODEL: {
+        START: UPDATE_MODEL,
+        UPDATE_MODEL: {
+            "function": lambda msg: start_step("apply", msg)
+        },
+    },
     IMPORT: {
         START: IMPORT_READ,
         IMPORT_PREPARE: {
@@ -72,6 +80,14 @@ WORKFLOWS = {
             "function": lambda msg: start_step("import", msg),
             "next": [
                 {
+                    "step": UPDATE_MODEL
+                }
+            ],
+        },
+        UPDATE_MODEL: {
+            "function": lambda msg: start_step("apply", msg),
+            "next": [
+                {
                     "step": IMPORT_COMPARE
                 }
             ],
@@ -85,8 +101,16 @@ WORKFLOWS = {
             ],
         },
         IMPORT_UPLOAD: {
-            "function": lambda msg: start_step('fullupdate', msg)
-        }
+            "function": lambda msg: start_step('fullupdate', msg),
+            "next": [
+                {
+                    "step": APPLY_EVENTS
+                }
+            ],
+        },
+        APPLY_EVENTS: {
+            "function": lambda msg: start_step("apply", msg)
+        },
     },
     EXPORT: {
         START: EXPORT_GENERATE,
