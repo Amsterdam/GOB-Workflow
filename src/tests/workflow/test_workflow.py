@@ -52,11 +52,12 @@ class TestWorkflow(TestCase):
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start(self, job_start, step_start):
+        job_start.return_value = {'id': "Any process id"}
         self.workflow.start({})
 
-        WORKFLOWS["Workflow"]["Step"]["function"].assert_called_with({"header": {}, "summary": {}})
-        job_start.assert_called_with("Workflow", {"header": {}, "summary": {}})
-        step_start.assert_called_with("Step", {})
+        WORKFLOWS["Workflow"]["Step"]["function"].assert_called_with({'header': {'process_id': 'Any process id'}, 'summary': {}})
+        job_start.assert_called_with('Workflow', {'header': {'process_id': 'Any process id'}, 'summary': {}})
+        step_start.assert_called_with('Step', {'process_id': 'Any process id'})
 
     def test_start_new(self):
         self.workflow.start = mock.MagicMock()
@@ -88,20 +89,22 @@ class TestWorkflow(TestCase):
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start_and_end(self, job_start, step_start):
+        job_start.return_value = {'id': "Any process id"}
         WORKFLOWS["Workflow"]["Step"]["function"] = lambda _ : END_OF_WORKFLOW
         self.workflow.start({})
-        job_start.assert_called_with("Workflow", {"header": {}, "summary": {}})
-        step_start.assert_called_with("Step", {})
+        job_start.assert_called_with('Workflow', {'header': {'process_id': 'Any process id'}, 'summary': {}})
+        step_start.assert_called_with('Step', {'process_id': 'Any process id'})
 
     @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j: False)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start_with_contents(self, job_start, step_start):
+        job_start.return_value = {'id': "Any process id"}
         self.workflow.start({'summary': 'any summary', 'contents': []})
 
-        WORKFLOWS["Workflow"]["Step"]["function"].assert_called_with({"header": {}, 'summary': {}, 'contents': []})
-        job_start.assert_called_with("Workflow", {"header": {}, 'summary': {}, 'contents': []})
-        step_start.assert_called_with("Step", {})
+        WORKFLOWS["Workflow"]["Step"]["function"].assert_called_with({'summary': {}, 'contents': [], 'header': {'process_id': 'Any process id'}})
+        job_start.assert_called_with('Workflow', {'summary': {}, 'contents': [], 'header': {'process_id': 'Any process id'}})
+        step_start.assert_called_with('Step', {'process_id': 'Any process id'})
 
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.job_end")
