@@ -51,9 +51,11 @@ class Workflow():
         :param msg: The parameters to the workflow
         :return:
         """
-        if not msg.get("header"):
-            msg["header"] = {}
         job = job_start(self._workflow_name, msg)
+        msg['header'] = {
+            **msg.get('header', {}),
+            'process_id': job['id']
+        }
         if job_runs(job):
             self.reject(self._workflow_name, msg, job)
         else:
