@@ -22,8 +22,8 @@ START = "start"  # workflow[START] is the name of the first step in a workflow
 IMPORT = "import"
 IMPORT_PREPARE = "prepare"
 IMPORT_READ = "read"
-PRE_APPLY = "pre_apply"
-POST_APPLY = "post_apply"
+UPDATE_MODEL = "update_model"
+APPLY_EVENTS = "apply events"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
 IMPORT_WORKFLOWS = "import_workflows"
@@ -57,6 +57,12 @@ WORKFLOWS = {
     #         ],
     #     }
     # },
+    UPDATE_MODEL: {
+        START: UPDATE_MODEL,
+        UPDATE_MODEL: {
+            "function": lambda msg: start_step("apply", msg)
+        },
+    },
     IMPORT: {
         START: IMPORT_READ,
         IMPORT_PREPARE: {
@@ -74,11 +80,11 @@ WORKFLOWS = {
             "function": lambda msg: start_step("import", msg),
             "next": [
                 {
-                    "step": PRE_APPLY
+                    "step": UPDATE_MODEL
                 }
             ],
         },
-        PRE_APPLY: {
+        UPDATE_MODEL: {
             "function": lambda msg: start_step("apply", msg),
             "next": [
                 {
@@ -98,11 +104,11 @@ WORKFLOWS = {
             "function": lambda msg: start_step('fullupdate', msg),
             "next": [
                 {
-                    "step": POST_APPLY
+                    "step": APPLY_EVENTS
                 }
             ],
         },
-        POST_APPLY: {
+        APPLY_EVENTS: {
             "function": lambda msg: start_step("apply", msg)
         },
     },
