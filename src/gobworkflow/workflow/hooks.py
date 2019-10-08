@@ -3,8 +3,9 @@ from gobcore.message_broker.config import WORKFLOW_EXCHANGE
 
 HOOK_KEY = "result_key"
 
+
 def _get_hook_key(msg):
-    return msg['header'].get(HOOK_KEY)
+    return msg.get('header', {}).get(HOOK_KEY)
 
 
 def has_hooks(msg):
