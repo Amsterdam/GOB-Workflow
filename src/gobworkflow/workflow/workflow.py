@@ -51,7 +51,7 @@ class Workflow():
         :param msg: The parameters to the workflow
         :return:
         """
-        job_id = msg["header"].get("jobid")
+        job_id = msg.get("header", {}).get("jobid")
         if job_id is None:
             job = job_start(self._workflow_name, msg)
             msg['header'] = {
@@ -59,8 +59,8 @@ class Workflow():
                 'process_id': job['id']
             }
             if job_runs(job):
-                self.reject(self._workflow_name, msg, job)
-        self._function(self._step_name)(msg)
+                return self.reject(self._workflow_name, msg, job)
+        return self._function(self._step_name)(msg)
 
     def reject(self, action, msg, job):
         """

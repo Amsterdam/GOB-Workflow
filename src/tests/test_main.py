@@ -42,7 +42,8 @@ class TestMain(TestCase):
     @mock.patch('gobworkflow.storage.storage.get_job_step')
     @mock.patch('gobworkflow.workflow.jobs.step_status')
     @mock.patch('gobworkflow.workflow.workflow.Workflow')
-    def test_main(self, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
+    @mock.patch('gobworkflow.workflow.hooks.handle_result')
+    def test_main(self, mock_handle, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
 
         # With command line arguments
         sys.argv = ['python -m gobworkflow']
@@ -70,6 +71,17 @@ class TestMain(TestCase):
         })
         self.assertEqual(workflow.msg, {'header': {'jobid': 'any jobid', 'stepid': 'any stepid'}})
 
+        workflow.msg = None
+        __main__.handle_result({
+            'header': {
+                'jobid': 'any jobid',
+                'stepid': 'any stepid',
+                'result_key': 'any result key'
+            }
+        })
+        self.assertIsNone(workflow.msg)
+        mock_handle.assert_called()
+
         __main__.start_workflow({
             'workflow': {
                 'workflow_name': 'any workflow',
@@ -96,6 +108,20 @@ class TestMain(TestCase):
         })
         self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'jobid': 'any job', 'stepid': 'any step' }})
         mock_workflow.assert_called_with('any workflow')
+
+        workflow.msg = None
+        __main__.start_workflow({
+            'workflow': {
+                'workflow_name': None,
+            },
+            'header': {
+                'jobid': 'any job',
+                'stepid': 'any step'
+            },
+            'anything': 'any value'
+        })
+        self.assertIsNone(workflow.msg)
+        mock_workflow.end_of_workflow.assert_called()
 
         __main__.on_workflow_progress({"jobid": "any job", "stepid": "any step", "status": "any status"})
         mock_status.assert_called_with("any job", "any step", "any status")
