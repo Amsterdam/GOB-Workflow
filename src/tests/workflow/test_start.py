@@ -28,36 +28,6 @@ class TestStart(TestCase):
         }
         mock_publish.assert_called_with(WORKFLOW_EXCHANGE, "workflow.request", expect_msg)
 
-    @mock.patch('gobworkflow.workflow.start.step_status', mock.MagicMock())
-    @mock.patch('gobworkflow.workflow.start.publish')
-    def testStartWorkflows(self, mock_publish):
-        workflow = "any workflow"
-        step = "any step"
-
-        msg = {
-            'header': { 'jobid': 0, 'stepid': 0 },
-            'contents': []
-        }
-        start.start_workflows(workflow, step, msg)
-        mock_publish.assert_not_called()
-
-        msg = {
-            'header': { 'jobid': 0, 'stepid': 0 },
-            'contents': [{'extra': 'content'}, {'extra': 'content'}]
-        }
-        start.start_workflows(workflow, step, msg)
-        for content in msg['contents']:
-            expect_msg = {
-                **msg,
-                'workflow': {
-                    'workflow_name': workflow,
-                    'step_name': step
-                }
-            }
-            expect_msg['header'].update(content)
-            mock_publish.assert_any_call(WORKFLOW_EXCHANGE, "workflow.request", expect_msg)
-        self.assertEqual(mock_publish.call_count, len(msg['contents']))
-
     @mock.patch('gobworkflow.workflow.start.logger', mock.MagicMock())
     def testHasNoErrors(self):
         self.assertTrue(start.has_no_errors({}))
