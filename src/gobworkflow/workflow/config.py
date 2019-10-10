@@ -13,20 +13,22 @@ Each next step may define a condition that needs to be met in order to get eligi
 When one or more next steps match its condition, the first one will be executed
 If no next steps are defined on can be found the workflow is ended
 """
-from gobworkflow.workflow.start import start_workflows, start_step, has_no_errors
+from gobworkflow.workflow.start import start_step, has_no_errors
 
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
+# The prepare workflow and steps
+PREPARE = "prepare"
+PREPARE_START = "prepare_start"
+
 # The import workflow and steps
 IMPORT = "import"
-IMPORT_PREPARE = "prepare"
 IMPORT_READ = "read"
 UPDATE_MODEL = "update_model"
-APPLY_EVENTS = "apply events"
+APPLY_EVENTS = "apply_events"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
-IMPORT_WORKFLOWS = "import_workflows"
 
 # The export workflow and steps
 EXPORT = "export"
@@ -63,19 +65,14 @@ WORKFLOWS = {
             "function": lambda msg: start_step("apply", msg)
         },
     },
+    PREPARE: {
+        START: PREPARE_START,
+        PREPARE_START: {
+            "function": lambda msg: start_step("prepare", msg),
+        }
+    },
     IMPORT: {
         START: IMPORT_READ,
-        IMPORT_PREPARE: {
-            "function": lambda msg: start_step("prepare", msg),
-            "next": [
-                {
-                    "step": IMPORT_WORKFLOWS
-                }
-            ]
-        },
-        IMPORT_WORKFLOWS: {
-            "function": lambda msg: start_workflows(IMPORT, IMPORT_READ, msg)
-        },
         IMPORT_READ: {
             "function": lambda msg: start_step("import", msg),
             "next": [

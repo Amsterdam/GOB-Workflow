@@ -51,15 +51,16 @@ class Workflow():
         :param msg: The parameters to the workflow
         :return:
         """
-        job = job_start(self._workflow_name, msg)
-        msg['header'] = {
-            **msg.get('header', {}),
-            'process_id': job['id']
-        }
-        if job_runs(job):
-            self.reject(self._workflow_name, msg, job)
-        else:
-            self._function(self._step_name)(msg)
+        job_id = msg.get("header", {}).get("jobid")
+        if job_id is None:
+            job = job_start(self._workflow_name, msg)
+            msg['header'] = {
+                **msg.get('header', {}),
+                'process_id': job['id']
+            }
+            if job_runs(job):
+                return self.reject(self._workflow_name, msg, job)
+        return self._function(self._step_name)(msg)
 
     def reject(self, action, msg, job):
         """
@@ -80,7 +81,8 @@ class Workflow():
         step_status(job['id'], step['id'], "rejected")
         job_end(job['id'], "rejected")
 
-    def _end_of_workflow(self, msg):
+    @classmethod
+    def end_of_workflow(self, msg):
         logger.configure(msg, "WORKFLOW")
         logger.info(f"End of workflow")
         job_end(msg["header"].get("jobid"))
@@ -107,7 +109,7 @@ class Workflow():
                 self._function(next[0]["step"])(msg)
             else:
                 # No next => end of workflow reached
-                self._end_of_workflow(msg)
+                self.end_of_workflow(msg)
 
         return handle_msg
 
@@ -128,7 +130,7 @@ class Workflow():
             msg['summary'] = {}
             result = self._workflow[step_name].get("function", lambda _: None)(msg)
             if result == END_OF_WORKFLOW:
-                self._end_of_workflow(msg)
+                self.end_of_workflow(msg)
 
         return exec_step
 

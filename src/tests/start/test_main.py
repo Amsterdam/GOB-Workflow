@@ -1,8 +1,7 @@
 from unittest import TestCase, mock
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 from gobcore.workflow.start_commands import StartCommand, StartCommandArgument, NoSuchCommandException
-from gobworkflow.workflow.config import IMPORT, EXPORT, EXPORT_TEST, RELATE, IMPORT_PREPARE
 
 from gobworkflow.start import __main__
 from gobworkflow.start.__main__ import WorkflowCommands

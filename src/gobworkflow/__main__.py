@@ -23,6 +23,8 @@ from gobworkflow.heartbeats import on_heartbeat
 from gobworkflow.storage.storage import get_job_step
 from gobworkflow.task.queue import TaskQueue
 
+from gobworkflow.workflow import hooks
+
 
 def handle_result(msg):
 
@@ -42,7 +44,10 @@ def handle_result(msg):
     # Get the job and step from the database
     job, step = get_job_step(jobid, stepid)
     # Start the result handler method with the given message
-    Workflow(job.type, step.name).handle_result()(msg)
+    if hooks.has_hooks(msg):
+        hooks.handle_result(msg)
+    else:
+        Workflow(job.type, step.name).handle_result()(msg)
 
 
 def start_workflow(msg):
@@ -59,10 +64,12 @@ def start_workflow(msg):
     del msg['workflow']
 
     # Start the workflow with the given message
-    if step_name:
+    if workflow_name and step_name:
         Workflow(workflow_name, step_name).start(msg)
-    else:
+    elif workflow_name:
         Workflow(workflow_name).start(msg)
+    else:
+        Workflow.end_of_workflow(msg)
 
 
 def on_workflow_progress(msg):
@@ -81,6 +88,7 @@ def on_workflow_progress(msg):
         if status == STATUS_FAIL:
             logger.error(f"Program error: {msg['info_msg']}")
             logger.info(f"End of workflow")
+    hooks.on_workflow_progress(msg)
 
 
 task_queue = TaskQueue()
