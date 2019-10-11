@@ -43,7 +43,8 @@ class TestMain(TestCase):
     @mock.patch('gobworkflow.workflow.jobs.step_status')
     @mock.patch('gobworkflow.workflow.workflow.Workflow')
     @mock.patch('gobworkflow.workflow.hooks.handle_result')
-    def test_main(self, mock_handle, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
+    @mock.patch('gobworkflow.storage.storage.wait_for_storage')
+    def test_main(self, mock_wait, mock_handle, mock_workflow, mock_status, mock_get_job_step, mock_connect, mock_messagedriven_service):
 
         # With command line arguments
         sys.argv = ['python -m gobworkflow']
@@ -53,6 +54,8 @@ class TestMain(TestCase):
 
         # Should connect to the storage
         mock_connect.assert_called_with()
+        # Should check for any pending migrations
+        mock_wait.assert_called_with()
         # Should start as a service
         mock_messagedriven_service.assert_called_with(__main__.SERVICEDEFINITION,
                                                  "Workflow",

@@ -2,10 +2,13 @@
 
 This module encapsulates the GOB Management storage.
 """
+import time
 import datetime
 import json
 
+from alembic.runtime import migration
 import alembic.config
+import alembic.script
 
 from sqlalchemy import create_engine, or_, and_
 from sqlalchemy.exc import DBAPIError
@@ -56,6 +59,27 @@ def connect(migrate=False):
         disconnect()  # Cleanup
 
     return is_connected()
+
+
+def wait_for_storage():
+    """
+    Wait for storage to be up-to-date.
+    If any migrations need to be run wait for them to get done before continuing
+
+    :return: None
+    """
+    alembic_cfg = alembic.config.Config('alembic.ini')
+    script = alembic.script.ScriptDirectory.from_config(alembic_cfg)
+    with engine.begin() as conn:
+        context = migration.MigrationContext.configure(conn)
+        up_to_date = context.get_current_revision() == script.get_current_head()
+
+    if up_to_date:
+        print("Storage is up-to-date")
+    else:
+        print('Storage is outdated, please update manually: python -m gobworkflow --migrate')
+        time.sleep(30)
+        wait_for_storage()
 
 
 def disconnect():
