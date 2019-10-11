@@ -7,7 +7,7 @@ from gobcore.model.sa.management import Job, JobStep, Task
 
 import gobworkflow.storage
 
-from gobworkflow.storage.storage import connect, disconnect, is_connected
+from gobworkflow.storage.storage import connect, wait_for_storage, disconnect, is_connected
 from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, \
     _update_servicetasks, save_audit_log
 from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs
@@ -87,6 +87,15 @@ class MockedEngine:
 
     def execute(self, stmt):
         self.stmt = stmt
+
+    def begin(self):
+        return self
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        pass
 
 class MockException(Exception):
     pass
@@ -382,6 +391,23 @@ class TestStorage(TestCase):
         result = get_tasks_for_stepid("someid")
         self.assertEqual({"stepid": "someid"}, mock_session.filter_kwargs)
         self.assertEqual(['a', 'b'], result)
+
+    @mock.patch('gobworkflow.storage.storage.alembic.script')
+    @mock.patch('gobworkflow.storage.storage.migration')
+    @mock.patch('gobworkflow.storage.storage.time')
+    def test_wait_for_storage(self, mock_time, mock_migration, mock_script):
+        context = mock.MagicMock()
+        context.get_current_revision.side_effect = ["revision 1", "revision 2"]
+        mock_migration.MigrationContext.configure.return_value = context
+
+        script = mock.MagicMock()
+        script.get_current_head.return_value = "revision 2"
+        mock_script.ScriptDirectory.from_config.return_value = script
+
+        wait_for_storage()
+        self.assertEqual(script.get_current_head.call_count, 2)
+        self.assertEqual(context.get_current_revision.call_count, 2)
+        self.assertEqual(mock_time.sleep.call_count, 1)
 
 class TestJobRuns(TestCase):
 
