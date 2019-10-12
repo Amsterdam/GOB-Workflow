@@ -2,7 +2,6 @@
 
 This module encapsulates the GOB Management storage.
 """
-import time
 import datetime
 import json
 
@@ -26,7 +25,7 @@ session = None
 engine = None
 
 
-def connect(migrate=False):
+def connect(force_migrate=False):
     """Module initialisation
 
     The connection with the underlying storage is initialised.
@@ -38,16 +37,9 @@ def connect(migrate=False):
     global session, engine
 
     try:
-        if migrate:
-            # Database migrations are handled by alembic
-            # alembic upgrade head
-            alembicArgs = [
-                '--raiseerr',
-                'upgrade', 'head',
-            ]
-            alembic.config.main(argv=alembicArgs)
-
         engine = create_engine(URL(**GOB_MGMT_DB))
+
+        migrate_storage(force_migrate)
 
         # Declarative base model to create database tables and classes
         Base.metadata.bind = engine
@@ -61,13 +53,26 @@ def connect(migrate=False):
     return is_connected()
 
 
-def wait_for_storage():
+def migrate_storage(force_migrate):
     """
-    Wait for storage to be up-to-date.
-    If any migrations need to be run wait for them to get done before continuing
+    Migrate storage to latest version.
 
-    :return: None
+    In order to prevent that multiple instances will migrate at the same time
+    and to prevent migration locks, access to this method is normally acquired
+    by a lock.
+
+    This method will always unlock the lock, even if it has not been set.
+
+    The reason for setting the lock
+    :return:
     """
+    MIGRATION_LOCK = 248517090  # Just some random number
+
+    if not force_migrate:
+        # Don't force
+        # Nicely wait for any migrations to finish before continuing
+        engine.execute(f"SELECT pg_advisory_lock({MIGRATION_LOCK})")
+
     alembic_cfg = alembic.config.Config('alembic.ini')
     script = alembic.script.ScriptDirectory.from_config(alembic_cfg)
     with engine.begin() as conn:
@@ -77,9 +82,42 @@ def wait_for_storage():
     if up_to_date:
         print("Storage is up-to-date")
     else:
-        print('Storage is outdated, please update manually: python -m gobworkflow --migrate')
-        time.sleep(30)
-        wait_for_storage()
+        print('Storage migration started')
+        try:
+            # Database migrations are handled by alembic
+            # alembic upgrade head
+            alembicArgs = [
+                '--raiseerr',
+                'upgrade', 'head',
+            ]
+            alembic.config.main(argv=alembicArgs)
+        except Exception as e:
+            print(f'Storage migration failed: {str(e)}')
+        else:
+            print('Storage migration ended successfully')
+
+    # Always unlock
+    engine.execute(f"SELECT pg_advisory_unlock({MIGRATION_LOCK})")
+
+
+# def wait_for_storage():
+#     """
+#     Wait for storage to be up-to-date.
+#     If any migrations need to be run wait for them to get done before continuing
+#
+#     :return: None
+#     """
+#     alembic_cfg = alembic.config.Config('alembic.ini')
+#     script = alembic.script.ScriptDirectory.from_config(alembic_cfg)
+#     with engine.begin() as conn:
+#         context = migration.MigrationContext.configure(conn)
+#         up_to_date = context.get_current_revision() == script.get_current_head()
+#
+#     if up_to_date:
+#         print("Storage is up-to-date")
+#     else:
+#         print('Storage is outdated, wait for migration or update manually using: python -m gobworkflow --migrate')
+#         migrate_storage()
 
 
 def disconnect():

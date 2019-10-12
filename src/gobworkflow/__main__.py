@@ -16,7 +16,7 @@ from gobcore.message_broker.config import JOBSTEP_RESULT_QUEUE, LOG_QUEUE, AUDIT
 from gobcore.message_broker.messagedriven_service import messagedriven_service
 from gobcore.logging.logger import logger
 
-from gobworkflow.storage.storage import connect, wait_for_storage, save_log, save_audit_log
+from gobworkflow.storage.storage import connect, save_log, save_audit_log
 from gobworkflow.workflow.jobs import step_status
 from gobworkflow.workflow.workflow import Workflow
 from gobworkflow.heartbeats import on_heartbeat
@@ -140,12 +140,10 @@ parser.add_argument('--migrate',
 args = parser.parse_args()
 
 if args.migrate:
-    print("Start migration")
-    connect(migrate=True)
-    print("End migratiion")
+    print("Storage migration forced")
+    connect(force_migrate=True)
 else:
     connect()
-    wait_for_storage()
 
     params = {
         "prefetch_count": 1,
