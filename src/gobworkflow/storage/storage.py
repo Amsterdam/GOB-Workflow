@@ -62,7 +62,7 @@ def migrate_storage(force_migrate):
     by a lock.
 
     This method will always unlock the lock, even if a lock has not been set.
-    This allows to unlock
+    When using the force_migrate option the lock is passed and any open lock will be released
 
     The reason for setting the lock is to prevent multiple migrations that might lock each other
     :return:
