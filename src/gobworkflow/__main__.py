@@ -140,9 +140,8 @@ parser.add_argument('--migrate',
 args = parser.parse_args()
 
 if args.migrate:
-    print("Start migration")
-    connect(migrate=True)
-    print("End migratiion")
+    print("Storage migration forced")
+    connect(force_migrate=True)
 else:
     connect()
 

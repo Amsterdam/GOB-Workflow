@@ -7,7 +7,7 @@ from gobcore.model.sa.management import Job, JobStep, Task
 
 import gobworkflow.storage
 
-from gobworkflow.storage.storage import connect, disconnect, is_connected
+from gobworkflow.storage.storage import connect, migrate_storage, disconnect, is_connected
 from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, \
     _update_servicetasks, save_audit_log
 from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs
@@ -88,6 +88,15 @@ class MockedEngine:
     def execute(self, stmt):
         self.stmt = stmt
 
+    def begin(self):
+        return self
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        pass
+
 class MockException(Exception):
     pass
 
@@ -124,38 +133,32 @@ class TestStorage(TestCase):
         update_service(service, [])
         self.assertEqual(mockedSession._first.is_alive, service["is_alive"])
 
-    @mock.patch("gobworkflow.storage.storage.alembic.config")
+    @mock.patch("gobworkflow.storage.storage.migrate_storage")
     @mock.patch("gobworkflow.storage.storage.create_engine")
-    def test_connect(self, mock_create, mock_alembic):
-        mock_alembic.main = mock.MagicMock()
-
-        result = connect(migrate=True)
+    def test_connect(self, mock_create, mock_migrate):
+        result = connect()
 
         mock_create.assert_called()
-        mock_alembic.main.assert_called()
+        mock_migrate.assert_called()
         self.assertEqual(result, True)
         self.assertEqual(is_connected(), True)
 
     @mock.patch("gobworkflow.storage.storage.DBAPIError", MockException)
     @mock.patch("gobworkflow.storage.storage.create_engine", mock.MagicMock())
-    @mock.patch("gobworkflow.storage.storage.alembic.config")
-    def test_connect_error(self, mock_alembic):
+    @mock.patch("gobworkflow.storage.storage.migrate_storage", lambda argv: raise_exception(MockException))
+    def test_connect_error(self):
         # Operation errors should be catched
-        mock_alembic.main = lambda argv: raise_exception(MockException)
-
-        result = connect(migrate=True)
+        result = connect()
 
         self.assertEqual(result, False)
         self.assertEqual(is_connected(), False)
 
-    @mock.patch("gobworkflow.storage.storage.alembic.config")
+    @mock.patch("gobworkflow.storage.storage.migrate_storage", lambda force_migrate: raise_exception(MockException))
     @mock.patch("gobworkflow.storage.storage.create_engine", mock.MagicMock())
-    def test_connect_other_error(self, mock_alembic):
+    def test_connect_other_error(self):
         # Only operational errors should be catched
-        mock_alembic.main = lambda argv: raise_exception(MockException)
-
         with self.assertRaises(MockException):
-            connect(migrate=True)
+            connect()
 
     @mock.patch("gobworkflow.storage.storage.engine.dispose")
     @mock.patch("gobworkflow.storage.storage.session.close")
@@ -382,6 +385,59 @@ class TestStorage(TestCase):
         result = get_tasks_for_stepid("someid")
         self.assertEqual({"stepid": "someid"}, mock_session.filter_kwargs)
         self.assertEqual(['a', 'b'], result)
+
+    @mock.patch("gobworkflow.storage.storage.alembic.config")
+    @mock.patch('gobworkflow.storage.storage.alembic.script')
+    @mock.patch('gobworkflow.storage.storage.migration')
+    def test_migrate_storage(self, mock_migration, mock_script, mock_config):
+        context = mock.MagicMock()
+        context.get_current_revision.return_value = "revision 1"
+        mock_migration.MigrationContext.configure.return_value = context
+
+        script = mock.MagicMock()
+        script.get_current_head.return_value = "revision 2"
+        mock_script.ScriptDirectory.from_config.return_value = script
+
+        migrate_storage(force_migrate=True)
+        self.assertEqual(script.get_current_head.call_count, 1)
+        self.assertEqual(context.get_current_revision.call_count, 1)
+        mock_config.main.assert_called()
+
+    @mock.patch("gobworkflow.storage.storage.alembic.config")
+    @mock.patch('gobworkflow.storage.storage.alembic.script')
+    @mock.patch('gobworkflow.storage.storage.migration')
+    def test_migrate_storage_up_to_date(self, mock_migration, mock_script, mock_config):
+        context = mock.MagicMock()
+        context.get_current_revision.return_value = "revision 2"
+        mock_migration.MigrationContext.configure.return_value = context
+
+        script = mock.MagicMock()
+        script.get_current_head.return_value = "revision 2"
+        mock_script.ScriptDirectory.from_config.return_value = script
+
+        migrate_storage(force_migrate=False)
+        self.assertEqual(script.get_current_head.call_count, 1)
+        self.assertEqual(context.get_current_revision.call_count, 1)
+        mock_config.main.assert_not_called()
+
+    @mock.patch("gobworkflow.storage.storage.alembic.config")
+    @mock.patch('gobworkflow.storage.storage.alembic.script')
+    @mock.patch('gobworkflow.storage.storage.migration')
+    def test_migrate_storage_exception(self, mock_migration, mock_script, mock_config):
+        context = mock.MagicMock()
+        context.get_current_revision.return_value = "revision 1"
+        mock_migration.MigrationContext.configure.return_value = context
+
+        script = mock.MagicMock()
+        script.get_current_head.return_value = "revision 2"
+        mock_script.ScriptDirectory.from_config.return_value = script
+
+        mock_config.main = lambda argv: raise_exception(MockException)
+
+        migrate_storage(force_migrate=False)
+        self.assertEqual(script.get_current_head.call_count, 1)
+        self.assertEqual(context.get_current_revision.call_count, 1)
+
 
 class TestJobRuns(TestCase):
 

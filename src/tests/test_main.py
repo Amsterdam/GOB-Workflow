@@ -34,7 +34,7 @@ class TestMain(TestCase):
         importlib.reload(__main__)
 
         # Should connect to the storage
-        mock_connect.assert_called_with(migrate=True)
+        mock_connect.assert_called_with(force_migrate=True)
 
     @mock.patch('gobcore.logging.logger.logger', mock.MagicMock())
     @mock.patch('gobcore.message_broker.messagedriven_service.messagedriven_service')

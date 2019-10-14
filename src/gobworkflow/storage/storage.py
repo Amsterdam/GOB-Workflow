@@ -5,7 +5,9 @@ This module encapsulates the GOB Management storage.
 import datetime
 import json
 
+from alembic.runtime import migration
 import alembic.config
+import alembic.script
 
 from sqlalchemy import create_engine, or_, and_
 from sqlalchemy.exc import DBAPIError
@@ -23,7 +25,7 @@ session = None
 engine = None
 
 
-def connect(migrate=False):
+def connect(force_migrate=False):
     """Module initialisation
 
     The connection with the underlying storage is initialised.
@@ -35,16 +37,9 @@ def connect(migrate=False):
     global session, engine
 
     try:
-        if migrate:
-            # Database migrations are handled by alembic
-            # alembic upgrade head
-            alembicArgs = [
-                '--raiseerr',
-                'upgrade', 'head',
-            ]
-            alembic.config.main(argv=alembicArgs)
-
         engine = create_engine(URL(**GOB_MGMT_DB))
+
+        migrate_storage(force_migrate)
 
         # Declarative base model to create database tables and classes
         Base.metadata.bind = engine
@@ -56,6 +51,51 @@ def connect(migrate=False):
         disconnect()  # Cleanup
 
     return is_connected()
+
+
+def migrate_storage(force_migrate):
+    """
+    Migrate storage to latest version.
+
+    In order to prevent that multiple instances will migrate at the same time
+    and to prevent migration locks, access to this method is normally acquired
+    by a lock.
+
+    This method will always unlock the lock, even if a lock has not been set.
+    When using the force_migrate option the lock is passed and any open lock will be released
+
+    The reason for setting the lock is to prevent multiple migrations that might lock each other
+    :return:
+    """
+    MIGRATION_LOCK = 248517090  # Just some random number
+
+    if not force_migrate:
+        # Don't force
+        # Nicely wait for any migrations to finish before continuing
+        engine.execute(f"SELECT pg_advisory_lock({MIGRATION_LOCK})")
+
+    try:
+        # Check if storage is up-to-date
+        alembic_cfg = alembic.config.Config('alembic.ini')
+        script = alembic.script.ScriptDirectory.from_config(alembic_cfg)
+        with engine.begin() as conn:
+            context = migration.MigrationContext.configure(conn)
+            up_to_date = context.get_current_revision() == script.get_current_head()
+
+        if not up_to_date:
+            print('Migrating storage')
+            alembicArgs = [
+                '--raiseerr',
+                'upgrade', 'head',
+            ]
+            alembic.config.main(argv=alembicArgs)
+    except Exception as e:
+        print(f'Storage migration failed: {str(e)}')
+    else:  # No exception
+        print('Storage is up-to-date')
+
+    # Always unlock
+    engine.execute(f"SELECT pg_advisory_unlock({MIGRATION_LOCK})")
 
 
 def disconnect():
