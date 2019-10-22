@@ -5,7 +5,7 @@ Used to create and update Jobs and JobSteps
 """
 import datetime
 
-from gobcore.status.heartbeat import STATUS_START, STATUS_FAIL
+from gobcore.status.heartbeat import STATUS_START, STATUS_FAIL, STATUS_SCHEDULED, STATUS_END
 from gobworkflow.storage.storage import job_save, job_update, step_save, step_update
 
 
@@ -34,7 +34,7 @@ def job_start(job_name, msg):
         "args": args,
         "start": timestamp,
         "end": None,
-        "status": "started"
+        "status": STATUS_START,
     }
     job = job_save(job_info)
     # Store the job and register its id
@@ -44,7 +44,7 @@ def job_start(job_name, msg):
     return job_info
 
 
-def job_end(id, status="ended"):
+def job_end(id, status=STATUS_END):
     """
     End a job
 
@@ -78,7 +78,7 @@ def step_start(step_name, header):
         "name": step_name,
         "start": None,
         "end": None,
-        "status": "scheduled"
+        "status": STATUS_SCHEDULED,
     }
     step = step_save(step_info)
     # Store the step and register its id
