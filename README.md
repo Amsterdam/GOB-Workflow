@@ -23,12 +23,6 @@ is required to run this component.
 
 ```bash
 docker-compose build
-
-export GOBOPTIONS=--migrate
-echo "Migrate database to latest version..."
-docker-compose up
-export GOBOPTIONS=
-
 docker-compose up &
 ```
 
