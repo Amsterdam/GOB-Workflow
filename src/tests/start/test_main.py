@@ -13,11 +13,14 @@ class Struct:
 
 class MockArgumentParser:
 
+    named_argument_added = False
+
     def __init__(self):
         MockArgumentParser.arguments = {}
 
     def add_argument(self, command, **kwargs):
-        pass
+        if command.startswith('--') and not MockArgumentParser.named_argument_added:
+            MockArgumentParser.named_argument_added = True
 
     def parse_args(self, *args):
         return Struct(**MockArgumentParser.arguments)
@@ -115,7 +118,7 @@ class TestWorkflowCommands(TestCase):
         start_command = StartCommand('command', {'workflow': 'theworkflow'})
         start_command.args = [
             StartCommandArgument({'name': 'arg1'}),
-            StartCommandArgument({'name': 'arg2'}),
+            StartCommandArgument({'name': 'arg2', 'named': True}),
         ]
 
         result = wfc._parse_arguments(start_command)
@@ -124,6 +127,9 @@ class TestWorkflowCommands(TestCase):
             'arg1': 'val1',
             'arg2': 'val2',
         }, result)
+
+        # Expect a named argument has been added
+        self.assertTrue(MockArgumentParser.named_argument_added)
 
     @mock.patch("gobworkflow.start.__main__.Workflow")
     def test_execute_command_without_step(self, mock_workflow, mock_start_commands, mock_parser):
