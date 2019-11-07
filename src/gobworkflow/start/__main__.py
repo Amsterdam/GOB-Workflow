@@ -71,7 +71,10 @@ The GOB workflow commands are:'''
         for arg in command.args:
             kwargs = self._extract_parser_arg_kwargs(arg)
 
-            parser.add_argument(arg.name, **kwargs)
+            if arg.named:
+                parser.add_argument(f'--{arg.name}', **kwargs)
+            else:
+                parser.add_argument(arg.name, **kwargs)
             names.append(arg.name)
 
         input_args = parser.parse_args(sys.argv[2:])
