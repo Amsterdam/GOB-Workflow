@@ -299,6 +299,18 @@ def _update_servicetasks(service, tasks):
 
 
 @session_auto_reconnect
+def job_get(job_id):
+    """Returns task with task_id
+
+    :param task_id:
+    :return:
+    """
+    # Force fetching latest job
+    session.commit()
+    return session.query(Job).get(job_id)
+
+
+@session_auto_reconnect
 def job_runs(jobinfo):
     job = session.query(Job)\
         .filter(Job.id != jobinfo['id'])\
