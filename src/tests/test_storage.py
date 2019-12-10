@@ -10,7 +10,7 @@ import gobworkflow.storage
 from gobworkflow.storage.storage import connect, migrate_storage, disconnect, is_connected
 from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, \
     _update_servicetasks, save_audit_log
-from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs
+from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs, job_get
 from gobworkflow.storage.storage import task_get, task_save, task_update, task_lock, task_unlock, get_tasks_for_stepid
 
 class MockedService:
@@ -316,6 +316,10 @@ class TestStorage(TestCase):
         result = job_update({"id": 123})
         self.assertIsInstance(result, Job)
         self.assertEqual(result.id, 123)
+
+    def test_job_get(self):
+        result = job_get('someid')
+        self.assertEqual('someid', result)
 
     def test_step_save(self):
         result = step_save({"name": "any name"})

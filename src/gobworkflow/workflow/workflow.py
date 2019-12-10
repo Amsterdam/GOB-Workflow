@@ -18,7 +18,8 @@ If not, the workflow is ended
 from gobcore.logging.logger import logger
 
 from gobworkflow.workflow.config import WORKFLOWS, START, DEFAULT_CONDITION
-from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status, STATUS_START
+from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status
+from gobcore.status.heartbeat import STATUS_START, STATUS_REJECTED
 from gobworkflow.storage.storage import job_runs
 from gobworkflow.workflow.start import END_OF_WORKFLOW
 
@@ -43,7 +44,7 @@ class Workflow():
         self._step = self._workflow[self._step_name]
 
     def start_new(self, header_attrs: dict):
-        self.start({'header': {**header_attrs}})
+        return self.start({'header': {**header_attrs}})
 
     def start(self, msg):
         """
@@ -51,6 +52,7 @@ class Workflow():
         :param msg: The parameters to the workflow
         :return:
         """
+        job = None
         job_id = msg.get("header", {}).get("jobid")
         if job_id is None:
             job = job_start(self._workflow_name, msg)
@@ -60,7 +62,8 @@ class Workflow():
             }
             if job_runs(job):
                 return self.reject(self._workflow_name, msg, job)
-        return self._function(self._step_name)(msg)
+        self._function(self._step_name)(msg)
+        return job
 
     def reject(self, action, msg, job):
         """
@@ -78,8 +81,8 @@ class Workflow():
         logger.configure(msg, action.upper())
         logger.error(f"Job {action} start rejected, job is already active")
         # End the workflow step and then the workflow job
-        step_status(job['id'], step['id'], "rejected")
-        job_end(job['id'], "rejected")
+        step_status(job['id'], step['id'], STATUS_REJECTED)
+        return job_end(job['id'], STATUS_REJECTED)
 
     @classmethod
     def end_of_workflow(self, msg):

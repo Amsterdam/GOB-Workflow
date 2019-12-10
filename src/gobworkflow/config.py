@@ -8,3 +8,5 @@ GOB_MGMT_DB = {
     'port': os.getenv("DATABASE_PORT_OVERRIDE", 5407),
     'database': os.getenv("DATABASE", 'gob_management'),
 }
+
+API_HOST = os.getenv('API_HOST', 'http://localhost:8141')

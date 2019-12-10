@@ -39,6 +39,15 @@ docker-compose -f src/.jenkins/test/docker-compose.yml build
 docker-compose -f src/.jenkins/test/docker-compose.yml run test
 ```
 
+# End-to-End Tests
+
+This repo contains the end-to-end tests for the GOB project. To start the end-to-end tests:
+
+```bash
+cd src
+python -m gobworkflow.e2e
+```
+
 # Local
 
 ## Requirements
