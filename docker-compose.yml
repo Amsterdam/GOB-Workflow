@@ -6,6 +6,7 @@ services:
     container_name: gobworkflow
     environment:
       MESSAGE_BROKER_ADDRESS: rabbitmq
+      API_HOST: http://gobapi:8001
       DATABASE_PORT_OVERRIDE: 5432
       DATABASE_HOST_OVERRIDE: management_database
       GOB_SHARED_DIR: /app/shared
