@@ -1,4 +1,7 @@
 #!groovy
+environment{
+  DOCKER_IMAGE_NAME = "datapunt/gob_workflow:${env.BUILD_NUMBER}"
+}
 def tryStep(String message, Closure block, Closure tearDown = null) {
     try {
         block()
@@ -33,7 +36,7 @@ node('GOBBUILD') {
     stage("Build image") {
         tryStep "build", {
             docker.withRegistry("${docker_registry_host}",'docker_registry_auth') {
-                def image = docker.build("datapunt/gob_workflow:${env.BUILD_NUMBER}",
+                def image = docker.build("${env.DOCKER_IMAGE_NAME}",
                     "--no-cache " +
                     "--shm-size 1G " +
                     "--build-arg BUILD_ENV=acc" +
@@ -50,7 +53,7 @@ node('GOBBUILD') {
     stage('Push develop image') {
         tryStep "image tagging", {
           docker.withRegistry("${docker_registry_host}",'docker_registry_auth') {
-               def image = docker.image("datapunt/gob_workflow:${env.BUILD_NUMBER}")
+               def image = docker.image("${env.DOCKER_IMAGE_NAME}")
                image.pull()
                image.push("develop")
             }
@@ -62,7 +65,7 @@ node('GOBBUILD') {
     stage('Push acceptance image') {
         tryStep "image tagging", {
             docker.withRegistry("${docker_registry_host}",'docker_registry_auth') {
-                def image = docker.image("datapunt/gob_workflow:${env.BUILD_NUMBER}")
+                def image = docker.image("${env.DOCKER_IMAGE_NAME}")
                 image.pull()
                 image.push("acceptance")
             }
