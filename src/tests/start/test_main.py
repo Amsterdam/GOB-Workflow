@@ -8,6 +8,7 @@ from gobworkflow.start.__main__ import WorkflowCommands
 
 class Struct:
     def __init__(self, **entries):
+        self.user = None
         self.__dict__.update(entries)
 
 
@@ -126,6 +127,34 @@ class TestWorkflowCommands(TestCase):
         self.assertEqual({
             'arg1': 'val1',
             'arg2': 'val2',
+        }, result)
+
+        # Expect a named argument has been added
+        self.assertTrue(MockArgumentParser.named_argument_added)
+
+    @mock.patch("gobworkflow.start.__main__.WorkflowCommands.execute_command")
+    def test_parse_argument_with_user(self, mock_execute, mock_start_commands, mock_parser):
+        wfc = WorkflowCommands()
+
+        mock_parser.return_value = MockArgumentParser()
+        MockArgumentParser.arguments['arg1'] = 'val1'
+        MockArgumentParser.arguments['arg2'] = 'val2'
+        MockArgumentParser.arguments['user'] = 'any user'
+        wfc._extract_parser_arg_kwargs = MagicMock()
+
+        start_command = StartCommand('command', {'workflow': 'theworkflow'})
+        start_command.args = [
+            StartCommandArgument({'name': 'arg1'}),
+            StartCommandArgument({'name': 'user'}),
+            StartCommandArgument({'name': 'arg2', 'named': True})
+        ]
+
+        result = wfc._parse_arguments(start_command)
+
+        self.assertEqual({
+            'arg1': 'val1',
+            'arg2': 'val2',
+            'user': 'any user'
         }, result)
 
         # Expect a named argument has been added
