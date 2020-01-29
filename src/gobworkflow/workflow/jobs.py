@@ -35,6 +35,7 @@ def job_start(job_name, msg):
         "start": timestamp,
         "end": None,
         "status": STATUS_START,
+        "user": msg.get("header", {}).get("user")
     }
     job = job_save(job_info)
     # Store the job and register its id
