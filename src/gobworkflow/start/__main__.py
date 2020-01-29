@@ -17,7 +17,7 @@ class WorkflowCommands():
     def __init__(self):
         start_commands = StartCommands()
 
-        usage = '''<command> [<args>]
+        usage = '''<command> [--user USER] [<args>]
 
 The GOB workflow commands are:'''
 
@@ -77,6 +77,8 @@ The GOB workflow commands are:'''
                 parser.add_argument(arg.name, **kwargs)
             names.append(arg.name)
 
+        parser.add_argument('--user', help='User id that starts the command', required=False)
+        names.append('user')
         input_args = parser.parse_args(sys.argv[2:])
 
         input_values = {}
