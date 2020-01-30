@@ -14,12 +14,12 @@ When one or more next steps match its condition, the first one will be executed
 If no next steps are defined on can be found the workflow is ended
 """
 from gobworkflow.workflow.start import start_step, has_no_errors
-
+from gobcore.message_broker.config import RELATE_UPDATE_VIEW, APPLY, COMPARE, FULLUPDATE, PREPARE, EXPORT,\
+    EXPORT_TEST, CHECK_RELATION
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
 # The prepare workflow and steps
-PREPARE = "prepare"
 PREPARE_START = "prepare_start"
 
 # The import workflow and steps
@@ -29,11 +29,11 @@ UPDATE_MODEL = "update_model"
 APPLY_EVENTS = "apply_events"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
+UPLOAD_RELATION = "upload_relation"
+UPDATE_VIEW = "update_view"
 
 # The export workflow and steps
-EXPORT = "export"
 EXPORT_GENERATE = "generate"
-EXPORT_TEST = "test"
 
 # The relate workflow and steps
 RELATE = "relate"
@@ -42,7 +42,6 @@ RELATE_CHECK = "check"
 
 # Default check for absence of errors before starting next step
 DEFAULT_CONDITION = has_no_errors
-
 
 # The GOB workflows
 WORKFLOWS = {
@@ -62,19 +61,19 @@ WORKFLOWS = {
     UPDATE_MODEL: {
         START: UPDATE_MODEL,
         UPDATE_MODEL: {
-            "function": lambda msg: start_step("apply", msg)
+            "function": lambda msg: start_step(APPLY, msg)
         },
     },
     PREPARE: {
         START: PREPARE_START,
         PREPARE_START: {
-            "function": lambda msg: start_step("prepare", msg),
+            "function": lambda msg: start_step(PREPARE, msg),
         }
     },
     IMPORT: {
         START: IMPORT_READ,
         IMPORT_READ: {
-            "function": lambda msg: start_step("import", msg),
+            "function": lambda msg: start_step(IMPORT, msg),
             "next": [
                 {
                     "step": UPDATE_MODEL
@@ -82,7 +81,7 @@ WORKFLOWS = {
             ],
         },
         UPDATE_MODEL: {
-            "function": lambda msg: start_step("apply", msg),
+            "function": lambda msg: start_step(APPLY, msg),
             "next": [
                 {
                     "step": IMPORT_COMPARE
@@ -90,7 +89,7 @@ WORKFLOWS = {
             ],
         },
         IMPORT_COMPARE: {
-            "function": lambda msg: start_step('compare', msg),
+            "function": lambda msg: start_step(COMPARE, msg),
             "next": [
                 {
                     "step": IMPORT_UPLOAD
@@ -98,7 +97,7 @@ WORKFLOWS = {
             ],
         },
         IMPORT_UPLOAD: {
-            "function": lambda msg: start_step('fullupdate', msg),
+            "function": lambda msg: start_step(FULLUPDATE, msg),
             "next": [
                 {
                     "step": APPLY_EVENTS
@@ -106,22 +105,64 @@ WORKFLOWS = {
             ],
         },
         APPLY_EVENTS: {
-            "function": lambda msg: start_step("apply", msg)
+            "function": lambda msg: start_step(APPLY, msg)
         },
     },
     EXPORT: {
         START: EXPORT_GENERATE,
         EXPORT_GENERATE: {
-            "function": lambda msg: start_step("export", msg)
+            "function": lambda msg: start_step(EXPORT, msg)
         },
         EXPORT_TEST: {
-            "function": lambda msg: start_step("export_test", msg)
+            "function": lambda msg: start_step(EXPORT_TEST, msg)
         }
     },
     RELATE: {
         START: RELATE_UPDATE,
         RELATE_UPDATE: {
-            "function": lambda msg: start_step("relate", msg),
+            "function": lambda msg: start_step(RELATE, msg),
+            "next": [
+                {
+                    "step": UPLOAD_RELATION,
+                    "condition": lambda msg: not msg.get('header', {}).get('is_split', False),
+                }
+            ]
+        },
+        UPLOAD_RELATION: {
+            "function": lambda msg: start_step(APPLY, msg),
+            "next": [
+                {
+                    "step": IMPORT_COMPARE
+                }
+            ],
+        },
+        IMPORT_COMPARE: {
+            "function": lambda msg: start_step(COMPARE, msg),
+            "next": [
+                {
+                    "step": IMPORT_UPLOAD
+                }
+            ],
+        },
+        IMPORT_UPLOAD: {
+            "function": lambda msg: start_step(FULLUPDATE, msg),
+            "next": [
+                {
+                    "step": APPLY_EVENTS
+                }
+            ],
+        },
+        APPLY_EVENTS: {
+            "function": lambda msg: start_step(APPLY, msg),
+            "next": [
+                {
+                    "condition": lambda _: True,
+                    "step": UPDATE_VIEW
+                }
+            ]
+        },
+        UPDATE_VIEW: {
+            "function": lambda msg: start_step(RELATE_UPDATE_VIEW, msg),
             "next": [
                 {
                     "condition": lambda _: True,
@@ -130,7 +171,7 @@ WORKFLOWS = {
             ]
         },
         RELATE_CHECK: {
-            "function": lambda msg: start_step('check_relation', msg)
+            "function": lambda msg: start_step(CHECK_RELATION, msg)
         }
-    }
+    },
 }
