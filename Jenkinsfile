@@ -16,69 +16,72 @@ def tryStep(String message, Closure block, Closure tearDown = null) {
     }
 }
 
-
 node('GOBBUILD') {
-    stage("Checkout") {
-        checkout scm
-    }
+    withEnv(["DOCKER_IMAGE_NAME=datapunt/gob_workflow:${env.BUILD_NUMBER}"
+            ]) {
 
-    stage('Test') {
-        tryStep "test", {
-            sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml build --no-cache && " +
-               "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml run -u root --rm test"
-
-        }, {
-            sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml down"
+        stage("Checkout") {
+            checkout scm
         }
-    }
 
-    stage("Build image") {
-        tryStep "build", {
-            docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                def image = docker.build("datapunt/gob_workflow:${env.BUILD_NUMBER}",
-                    "--no-cache " +
-                    "--shm-size 1G " +
-                    "--build-arg BUILD_ENV=acc" +
-                    " src")
-                image.push()
+        stage('Test') {
+            tryStep "test", {
+                sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml build --no-cache && " +
+                   "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml run -u root --rm test"
+
+            }, {
+                sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml down"
             }
         }
-    }
 
-    String BRANCH = "${env.BRANCH_NAME}"
-
-    if (BRANCH == "develop") {
-
-        stage('Push develop image') {
-            tryStep "image tagging", {
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                    def image = docker.image("datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                   image.pull()
-                   image.push("develop")
-                }
-            }
-        }
-    }
-
-    if (BRANCH == "master") {
-
-        stage('Push acceptance image') {
-            tryStep "image tagging", {
-                docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
-                    def image = docker.image("datapunt/gob_workflow:${env.BUILD_NUMBER}")
-                    image.pull()
-                    image.push("acceptance")
+        stage("Build image") {
+            tryStep "build", {
+                docker.withRegistry("${DOCKER_REGISTRY_HOST}",'docker_registry_auth') {
+                    def image = docker.build("${DOCKER_IMAGE_NAME}",
+                        "--no-cache " +
+                        "--shm-size 1G " +
+                        "--build-arg BUILD_ENV=acc" +
+                        " src")
+                    image.push()
                 }
             }
         }
 
-        stage("Deploy to ACC") {
-            tryStep "deployment", {
-                build job: 'Subtask_Openstack_Playbook',
-                    parameters: [
-                        [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
-                        [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
-                    ]
+        String BRANCH = "${env.BRANCH_NAME}"
+
+        if (BRANCH == "develop") {
+
+            stage('Push develop image') {
+                tryStep "image tagging", {
+                    docker.withRegistry("${DOCKER_REGISTRY_HOST}",'docker_registry_auth') {
+                       def image = docker.image("${DOCKER_IMAGE_NAME}")
+                       image.pull()
+                       image.push("develop")
+                    }
+                }
+            }
+        }
+
+        if (BRANCH == "master") {
+
+            stage('Push acceptance image') {
+                tryStep "image tagging", {
+                    docker.withRegistry("${DOCKER_REGISTRY_HOST}",'docker_registry_auth') {
+                        def image = docker.image("${DOCKER_IMAGE_NAME}")
+                        image.pull()
+                        image.push("acceptance")
+                    }
+                }
+            }
+
+            stage("Deploy to ACC") {
+                tryStep "deployment", {
+                    build job: 'Subtask_Openstack_Playbook',
+                        parameters: [
+                            [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
+                            [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
+                        ]
+                }
             }
         }
     }
