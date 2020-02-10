@@ -44,15 +44,11 @@ node('GOBBUILD') {
             }
         }
     }
-}
 
+    String BRANCH = "${env.BRANCH_NAME}"
 
-String BRANCH = "${env.BRANCH_NAME}"
+    if (BRANCH == "develop") {
 
-
-if (BRANCH == "develop") {
-
-    node('GOBBUILD') {
         stage('Push develop image') {
             tryStep "image tagging", {
                 docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
@@ -63,12 +59,9 @@ if (BRANCH == "develop") {
             }
         }
     }
-}
 
+    if (BRANCH == "master") {
 
-if (BRANCH == "master") {
-
-    node('GOBBUILD') {
         stage('Push acceptance image') {
             tryStep "image tagging", {
                 docker.withRegistry('https://repo.data.amsterdam.nl','docker-registry') {
@@ -78,9 +71,7 @@ if (BRANCH == "master") {
                 }
             }
         }
-    }
 
-    node('GOBBUILD') {
         stage("Deploy to ACC") {
             tryStep "deployment", {
                 build job: 'Subtask_Openstack_Playbook',
@@ -91,5 +82,4 @@ if (BRANCH == "master") {
             }
         }
     }
-
 }
