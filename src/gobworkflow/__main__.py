@@ -46,7 +46,7 @@ def handle_result(msg):
     # Start the result handler method with the given message
     if hooks.has_hooks(msg):
         hooks.handle_result(msg)
-    else:
+    elif job and step:
         Workflow(job.type, step.name).handle_result()(msg)
 
 
@@ -82,7 +82,7 @@ def on_workflow_progress(msg):
     """
     status = msg['status']
     step_info = step_status(msg['jobid'], msg['stepid'], status)
-    if status in [STATUS_OK, STATUS_FAIL]:
+    if step_info and status in [STATUS_OK, STATUS_FAIL]:
         logger.configure(msg, "WORKFLOW")
         logger.info(f"Duration {str(step_info.end - step_info.start).split('.')[0]}")
         if status == STATUS_FAIL:
