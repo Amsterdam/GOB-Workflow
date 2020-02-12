@@ -10,7 +10,7 @@ import alembic.config
 import alembic.script
 
 from sqlalchemy import create_engine, or_, and_
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
 
@@ -167,8 +167,12 @@ def save_log(msg):
         stepid=msg.get('stepid', None),
         data=json_data,
     )
-    session.add(record)
-    session.commit()
+    try:
+        session.add(record)
+        session.commit()
+    except IntegrityError:
+        print("ERROR: skip log message for non-existent job")
+        session.rollback()
 
 
 @session_auto_reconnect
@@ -376,9 +380,10 @@ def step_update(step_info):
     :return: JobStep instance
     """
     step = session.query(JobStep).get(step_info["id"])
-    for key, value in step_info.items():
-        setattr(step, key, value)
-    session.commit()
+    if step:
+        for key, value in step_info.items():
+            setattr(step, key, value)
+        session.commit()
     return step
 
 

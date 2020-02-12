@@ -2,6 +2,7 @@ from unittest import TestCase, mock
 
 import datetime
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import IntegrityError
 
 from gobcore.model.sa.management import Job, JobStep, Task
 
@@ -216,6 +217,20 @@ class TestStorage(TestCase):
 
         mock_add.assert_called_with(mock.ANY)
         mock_commit.assert_called_with()
+
+    @mock.patch("gobworkflow.storage.storage.IntegrityError", MockException)
+    @mock.patch("gobworkflow.storage.storage.session.add")
+    @mock.patch("gobworkflow.storage.storage.session.commit")
+    @mock.patch("gobworkflow.storage.storage.session.rollback")
+    def test_save_log_with_exception(self, mock_rollback, mock_commit, mock_add):
+        msg = {
+            "timestamp": "2020-06-20T12:20:20.000"
+        }
+        mock_add.side_effect = lambda r: raise_exception(MockException)
+        save_log(msg)
+        mock_add.assert_called_with(mock.ANY)
+        mock_commit.assert_not_called()
+        mock_rollback.assert_called()
 
     @mock.patch("gobworkflow.storage.storage.session")
     @mock.patch("gobworkflow.storage.storage.datetime.datetime")
