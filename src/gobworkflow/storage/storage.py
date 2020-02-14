@@ -11,6 +11,7 @@ import alembic.script
 
 from sqlalchemy import create_engine, or_, and_
 from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
 
@@ -29,7 +30,7 @@ def connect(force_migrate=False):
     """Module initialisation
 
     The connection with the underlying storage is initialised.
-    Meta information is available via the Base variale.
+    Meta information is available via the Base variable.
     Data retrieval is facilitated via the session object
 
     :return: True when the connection has been established
@@ -208,9 +209,11 @@ def mark_service_dead(service):
     # mark as dead
     service.is_alive = False
     # remove any tasks
-    _update_servicetasks(service, [])
-
-    session.commit()
+    try:
+        _update_servicetasks(service, [])
+        session.commit()
+    except ObjectDeletedError:
+        pass
 
 
 @session_auto_reconnect

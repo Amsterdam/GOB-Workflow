@@ -309,6 +309,19 @@ class TestStorage(TestCase):
         self.assertEqual(mockedService.is_alive, False)
         mock_update_servicetasks.assert_called_with(mockedService, [])
 
+    @mock.patch("gobworkflow.storage.storage.ObjectDeletedError", MockException)
+    @mock.patch("gobworkflow.storage.storage._update_servicetasks")
+    @mock.patch("gobworkflow.storage.storage.session")
+    def test_mark_as_dead_failure(self, mock_session, mock_update_servicetasks):
+        mockedService = MockedService()
+
+        mock_update_servicetasks.side_effect = lambda s, l: raise_exception(MockException)
+        mark_service_dead(mockedService)
+
+        mock_session.commit.assert_not_called()
+        self.assertEqual(mockedService.is_alive, False)
+        mock_update_servicetasks.assert_called_with(mockedService, [])
+
     def test_remove_service(self):
         mockedSession = MockedSession()
         gobworkflow.storage.storage.session = mockedSession
