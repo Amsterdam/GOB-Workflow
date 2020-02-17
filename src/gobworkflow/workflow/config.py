@@ -15,7 +15,7 @@ If no next steps are defined on can be found the workflow is ended
 """
 from gobworkflow.workflow.start import start_step, has_no_errors
 from gobcore.message_broker.config import RELATE_UPDATE_VIEW, APPLY, COMPARE, FULLUPDATE, PREPARE, EXPORT,\
-    EXPORT_TEST, CHECK_RELATION
+    EXPORT_TEST, CHECK_RELATION, RELATE_TABLE
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
@@ -123,26 +123,18 @@ WORKFLOWS = {
             "function": lambda msg: start_step(RELATE, msg),
             "next": [
                 {
-                    "step": UPLOAD_RELATION,
+                    "step": RELATE_TABLE,
                     "condition": lambda msg: not msg.get('header', {}).get('is_split', False),
                 }
             ]
         },
-        UPLOAD_RELATION: {
-            "function": lambda msg: start_step(APPLY, msg),
+        RELATE_TABLE: {
+            "function": lambda msg: start_step(RELATE_TABLE, msg),
             "next": [
                 {
-                    "step": IMPORT_COMPARE
+                    "step": IMPORT_UPLOAD,
                 }
-            ],
-        },
-        IMPORT_COMPARE: {
-            "function": lambda msg: start_step(COMPARE, msg),
-            "next": [
-                {
-                    "step": IMPORT_UPLOAD
-                }
-            ],
+            ]
         },
         IMPORT_UPLOAD: {
             "function": lambda msg: start_step(FULLUPDATE, msg),
@@ -157,7 +149,7 @@ WORKFLOWS = {
             "next": [
                 {
                     "condition": lambda _: True,
-                    "step": UPDATE_VIEW
+                    "step": UPDATE_VIEW,
                 }
             ]
         },
@@ -173,5 +165,5 @@ WORKFLOWS = {
         RELATE_CHECK: {
             "function": lambda msg: start_step(CHECK_RELATION, msg)
         }
-    },
+    }
 }
