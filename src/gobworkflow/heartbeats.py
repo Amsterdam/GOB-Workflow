@@ -71,6 +71,6 @@ def check_services():
         if time_ago.total_seconds() > _SERVICE_REMOVAL_TIMEOUT:
             # Final timeout reached, remove the service
             remove_service(service)
-        elif time_ago.total_seconds() > HEARTBEAT_INTERVAL:
+        elif time_ago.total_seconds() > (HEARTBEAT_INTERVAL * 2):
             # Heartbeat timeout, register as dead
             mark_service_dead(service)
