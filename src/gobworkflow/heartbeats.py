@@ -40,14 +40,17 @@ def on_heartbeat(msg):
         "timestamp": msg["timestamp"]
     }
 
-    service_tasks = [{
-        "service_name": service_name,
-        "name": thread["name"],
-        "is_alive": thread["is_alive"]
-    } for thread in msg["threads"]] if service["is_alive"] else []
+    service_tasks = {
+        thread['name']: {
+            'service_name': service_name,
+            'name': thread['name'],
+            'is_alive': thread['is_alive']
+        }
+        for thread in msg['threads']
+    } if service['is_alive'] else {}
 
     # Update in storage
-    update_service(service, service_tasks)
+    update_service(service, service_tasks.values())
 
     # timeout of heartbeat interval check
     check_services()

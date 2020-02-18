@@ -26,11 +26,13 @@ class TestE2ETest(TestCase):
     def test_start_relate(self, mock_workflow):
         e2e = E2ETest()
         e2e._wait_job_finished = MagicMock()
-        e2e._start_relate('some catalog')
+        e2e._start_relate('some catalog', 'some collection', 'some attribute')
 
         mock_workflow.assert_called_with(RELATE)
         mock_workflow.return_value.start_new.assert_called_with({
             'catalogue': 'some catalog',
+            'collection': 'some collection',
+            'attribute': 'some attribute',
         })
         e2e._wait_job_finished.assert_called_with(mock_workflow.return_value.start_new.return_value)
 
@@ -158,20 +160,23 @@ class TestE2ETest(TestCase):
 
     def test_relations(self):
         e2e = E2ETest()
-        e2e.test_relation_entities = ['entityA']
+        e2e.test_relation_entities = ['entity_a']
         e2e._start_import = MagicMock()
         e2e._start_relate = MagicMock()
-        e2e.test_relation_src_entities = ['srcEntityA']
-        e2e.test_relation_dst_relations = ['dstRelationA']
+        e2e.test_relation_src_entities = ['src_entity_a']
+        e2e.test_relation_dst_relations = ['dst_relation_a']
+        e2e.entities_abbreviations = {
+            'src_entity_a': 'srcA',
+        }
         e2e._check_api_output = MagicMock()
 
         e2e._test_relations()
-        e2e._start_import.assert_called_with('test_catalogue', 'entityA', 'REL')
-        e2e._start_relate.assert_called_with('test_catalogue')
+        e2e._start_import.assert_called_with('test_catalogue', 'entity_a', 'REL')
+        e2e._start_relate.assert_called_with('test_catalogue', 'src_entity_a', 'relation_a')
         e2e._check_api_output.assert_called_with(
-            '/dump/rel/tst_srcEntityA_tst_dstRelationA/?format=csv',
-            'expect.tst_srcEntityA_tst_dstRelationA.ndjson',
-            'Relation tst_srcEntityA_tst_dstRelationA'
+            '/dump/rel/tst_srcA_tst_dst_relation_a/?format=csv',
+            'expect.tst_srcA_tst_dst_relation_a.ndjson',
+            'Relation tst_srcA_tst_dst_relation_a'
         )
 
     def test_run(self):

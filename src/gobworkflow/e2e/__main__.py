@@ -45,10 +45,17 @@ class E2ETest:
         "rel_test_entity_c",
         "rel_test_entity_d",
     ]
+
     test_relation_src_entities = [
-        'rta',
-        'rtb'
+        "rel_test_entity_a",
+        "rel_test_entity_b",
     ]
+
+    entities_abbreviations = {
+        "rel_test_entity_a": "rta",
+        "rel_test_entity_b": "rtb",
+    }
+
     test_relation_dst_relations = [
         'rtc_ref_to_c',
         'rtc_manyref_to_c',
@@ -71,8 +78,8 @@ class E2ETest:
         })
         self._wait_job_finished(job)
 
-    def _start_relate(self, catalog: str):
-        job = Workflow(RELATE).start_new({'catalogue': catalog})
+    def _start_relate(self, catalog: str, collection: str, attribute: str):
+        job = Workflow(RELATE).start_new({'catalogue': catalog, 'collection': collection, 'attribute': attribute})
         self._wait_job_finished(job)
 
     def _wait_job_finished(self, job):
@@ -143,14 +150,15 @@ class E2ETest:
     def _test_relations(self):
         self._log("Test relations")
 
+        # First import entities to relate
         for entity in self.test_relation_entities:
             self._start_import(self.test_catalog, entity, 'REL')
 
-        self._start_relate(self.test_catalog)
-
         for src_entity in self.test_relation_src_entities:
             for dst_rel in self.test_relation_dst_relations:
-                rel_entity = f"tst_{src_entity}_tst_{dst_rel}"
+                self._start_relate(self.test_catalog, src_entity, '_'.join(dst_rel.split('_')[1:]))
+
+                rel_entity = f"tst_{self.entities_abbreviations[src_entity]}_tst_{dst_rel}"
                 self._check_api_output(
                     f"/dump/rel/{rel_entity}/?format=csv",
                     f"expect.{rel_entity}.ndjson",
