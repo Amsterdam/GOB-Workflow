@@ -209,11 +209,8 @@ def mark_service_dead(service):
     # mark as dead
     service.is_alive = False
     # remove any tasks
-    try:
-        _update_servicetasks(service, [])
-        session.commit()
-    except ObjectDeletedError:
-        pass
+    _update_servicetasks(service, [])
+    session.commit()
 
 
 @session_auto_reconnect
@@ -271,6 +268,8 @@ def _update_servicetasks(service, tasks):
     Delete all current tasks that are not in tasks
     Update or add all taska with the current status
 
+    A service (eg Workflow, Upload, Import) runs multiple tasks (eg MainThread, QueueHandler, Eventloop, ...)
+
     :param current_tasks:
     :param tasks:
     :return:
@@ -278,31 +277,52 @@ def _update_servicetasks(service, tasks):
     # Update db and refresh model
     session.commit()
 
-    # Remove any dangling tasks
-    session.query(ServiceTask).filter(ServiceTask.service_id == None).delete()  # noqa: E711
-    session.commit()
+    try:
+        # Get currently registered tasks for the service
+        current_tasks = session.query(ServiceTask).filter(ServiceTask.service_id == service.id).all()
 
-    # Get currently registered tasks for the service
-    current_tasks = session.query(ServiceTask).filter(ServiceTask.service_id == service.id).all()
+        _mark_dangling_tasks(current_tasks, service, tasks)
 
-    # Delete tasks that have ended
-    for task in current_tasks:
-        matches = [t for t in tasks if t["name"] == task.name]
-        if len(matches) == 0:
-            session.delete(task)
-            session.commit()
+        _mark_active_tasks(current_tasks, service, tasks)
 
+        # Update db and refresh model
+        session.commit()
+
+        # Remove any dangling tasks or tasks that have been marked for deletion
+        session.query(ServiceTask).filter(ServiceTask.service_id == None).delete()  # noqa: E711
+        session.commit()
+
+    except ObjectDeletedError:
+        # This method can be called for the same service by multiple workflow instances
+        # A conflict can occur and can safely be ignored
+        print(f"Ignore conflicting task deletions for service {service.name}")
+
+
+def _mark_active_tasks(current_tasks, service, tasks):
     # Add or update tasks that are active
+    # This part will run on every heartbeat message
     for task in tasks:
         matches = [t for t in current_tasks if t.name == task["name"]]
         if len(matches) == 0:
+            # Register new task
+            print(f"Register task {service.name}.{task['name']}")
             task = ServiceTask(**task)
             task.service_id = service.id
             session.add(task)
         else:
+            # Register alive-status of already existent task
             matches[0].is_alive = task["is_alive"]
 
-    # Commit is done by the caller
+
+def _mark_dangling_tasks(current_tasks, service, tasks):
+    # Delete tasks that have ended by detaching the tasks from the service
+    # Each heartbeat contains the running tasks
+    # When a service is marked dead then the task list argument is empty and all tasks will get deleted
+    for task in current_tasks:
+        matches = [t for t in tasks if t["name"] == task.name]
+        if len(matches) == 0:
+            print(f"Remove task {service.name}.{task.name}")
+            task.service_id = None
 
 
 @session_auto_reconnect
