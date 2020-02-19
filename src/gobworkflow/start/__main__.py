@@ -6,10 +6,12 @@ Requires one or more catalogs to build relations to, e.g.:
 """
 import argparse
 import sys
+import json
 
 from gobcore.workflow.start_commands import StartCommands, StartCommand, NoSuchCommandException, StartCommandArgument
 from gobworkflow.storage.storage import connect
 from gobworkflow.workflow.workflow import Workflow
+from gobworkflow.workflow.config import WORKFLOWS
 
 
 class WorkflowCommands():
@@ -17,7 +19,9 @@ class WorkflowCommands():
     def __init__(self):
         start_commands = StartCommands()
 
-        usage = '''<command> [--user USER] [<args>]
+        usage = f'''[info | <command> [--user USER] [<args>]]
+
+    {"info":16s}Shows the workflows
 
 The GOB workflow commands are:'''
 
@@ -34,13 +38,19 @@ The GOB workflow commands are:'''
         parser.add_argument('command', help='Command to run')
         args = parser.parse_args(sys.argv[1:2])
 
-        try:
-            command = start_commands.get(args.command)
-            self.execute_command(command)
-        except NoSuchCommandException:
-            print("Unrecognized command")
-            parser.print_help()
-            exit(1)
+        if args.command == "info":
+            self.show_workflows()
+        else:
+            try:
+                command = start_commands.get(args.command)
+                self.execute_command(command)
+            except NoSuchCommandException:
+                print("Unrecognized command")
+                parser.print_help()
+                exit(1)
+
+    def show_workflows(self):
+        print(json.dumps(WORKFLOWS, indent=4, default=lambda o: ''))
 
     def _extract_parser_arg_kwargs(self, arg: StartCommandArgument):
         kwargs = {
