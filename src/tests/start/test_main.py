@@ -179,3 +179,16 @@ class TestWorkflowCommands(TestCase):
         wfc.execute_command(start_command)
         mock_workflow.assert_called_with('theworkflow', 'thestartstep')
         mock_workflow.return_value.start_new.assert_called_with(wfc._parse_arguments.return_value)
+
+class TestInfo(TestCase):
+
+    @mock.patch("gobworkflow.start.__main__.argparse")
+    @mock.patch("gobworkflow.start.__main__.StartCommands")
+    def test_info(self, mock_start_commands, mock_argparse):
+        mock_args = MagicMock()
+        mock_parser = MagicMock()
+        mock_argparse.ArgumentParser.return_value = mock_parser
+        mock_parser.parse_args.return_value = mock_args
+        mock_args.command = 'info'
+        wfc = WorkflowCommands()
+        mock_start_commands.get.assert_not_called()
