@@ -329,6 +329,15 @@ class TestStorage(TestCase):
 
         self.assertEqual(mockedSession._delete, None)
 
+    @mock.patch("gobworkflow.storage.storage.ObjectDeletedError", MockException)
+    @mock.patch("gobworkflow.storage.storage._update_servicetasks", mock.MagicMock)
+    @mock.patch("gobworkflow.storage.storage.session")
+    def test_remove_service_concurrent(self, mock_session):
+        mock_session.query.side_effect = lambda s: raise_exception(MockException)
+        mockedService = MockedService()
+        remove_service(mockedService)
+        mock_session.commit.assert_not_called()
+
     def test_job_save(self):
         result = job_save({"name": "any name"})
         self.assertIsInstance(result, Job)

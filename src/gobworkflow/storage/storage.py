@@ -222,13 +222,18 @@ def remove_service(service):
     """
     # remove any tasks
     _update_servicetasks(service, [])
-    # remove service
-    session.query(Service) \
-        .filter(Service.host == service.host) \
-        .filter(Service.name == service.name) \
-        .delete()
 
-    session.commit()
+    try:
+        # remove service
+        session.query(Service) \
+            .filter(Service.host == service.host) \
+            .filter(Service.name == service.name) \
+            .delete()
+        session.commit()
+    except ObjectDeletedError:
+        # This method can be called for the same service by multiple workflow instances
+        # A conflict can occur and can safely be ignored
+        print(f"Ignore conflicting service deletion for service {service.name}")
 
 
 @session_auto_reconnect
