@@ -9,11 +9,13 @@ from alembic.runtime import migration
 import alembic.config
 import alembic.script
 
-from sqlalchemy import create_engine, or_, and_
+from sqlalchemy import create_engine, or_, and_, String
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import cast
 
 from gobcore.typesystem.json import GobTypeJSONEncoder
 
@@ -343,10 +345,18 @@ def job_get(job_id):
 
 
 @session_auto_reconnect
-def job_runs(jobinfo):
+def job_runs(jobinfo, msg):
+    header = msg.get('header')
+
+    # Also check for attribute to allow splitted relates to run
+    check_args = ['catalogue', 'collection', 'attribute']
+    job_args = [header.get(key) for key in check_args if header.get(key)]
+
+    # Filter jobs on type and catalog / collection / attribute if available
     job = session.query(Job)\
         .filter(Job.id != jobinfo['id'])\
-        .filter(Job.name == jobinfo['name'])\
+        .filter(Job.type == jobinfo['type'])\
+        .filter(Job.args.contains(cast(job_args, ARRAY(String))))\
         .filter(Job.end == None)\
         .order_by(Job.start.desc())\
         .first()  # noqa E711 (== None)

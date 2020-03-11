@@ -60,7 +60,7 @@ class Workflow():
                 **msg.get('header', {}),
                 'process_id': job['id']
             }
-            if job_runs(job):
+            if job_runs(job, msg):
                 return self.reject(self._workflow_name, msg, job)
         self._function(self._step_name)(msg)
         return job

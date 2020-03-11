@@ -485,26 +485,80 @@ class TestJobRuns(TestCase):
         session = MockedSession()
         mock_session.query.return_value = session
 
-        job_info = {'id': 'any id', 'name': 'any name'}
+        job_info = {'id': 'any id', 'name': 'any name', 'args': ['cat', 'col'], 'type': 'import'}
+        msg = {'header': {'catalogue': 'cat', 'collection': 'col'}}
 
         session._first = None
-        result = job_runs(job_info)
+        result = job_runs(job_info, msg)
         self.assertEqual(result, False)
 
         class Job:
             def __init__(self, start):
                 self.start = start
                 self.id = 'any id'
+                self.args = ['cat', 'col']
+                self.type = 'import'
 
         job = Job( datetime.datetime.now())
         session._first = job
-        result = job_runs(job_info)
+        result = job_runs(job_info, msg)
         self.assertEqual(result, True)
 
         job.start = datetime.datetime.now() - datetime.timedelta(hours=11)
-        result = job_runs(job_info)
+        result = job_runs(job_info, msg)
         self.assertEqual(result, True)
 
         job.start = datetime.datetime.now() - datetime.timedelta(hours=12)
-        result = job_runs(job_info)
+        result = job_runs(job_info, msg)
         self.assertEqual(result, False)
+
+    @mock.patch('gobworkflow.storage.storage.Job')
+    @mock.patch('gobworkflow.storage.storage.session')
+    def test_job_runs_test_query(self, mock_session, mock_job):
+        mock_job.id = '1234'
+        mock_job.type = 'import'
+        mock_job.args = mock.MagicMock()
+        mock_job.start = mock.MagicMock()
+
+        msg = {'header': {'catalogue': 'cat', 'collection': 'col'}}
+
+        class Job:
+            def __init__(self, start):
+                self.start = start
+                self.id = '1234'
+
+
+        result_job = Job( datetime.datetime.now())
+
+        mock_session.query.return_value \
+                    .filter.return_value \
+                    .filter.return_value \
+                    .filter.return_value \
+                    .filter.return_value \
+                    .order_by.return_value \
+                    .first.return_value = result_job
+
+        job_info = {'id': 'any id', 'name': 'any name', 'args': ['cat', 'col'], 'type': 'import'}
+
+        result = job_runs(job_info, msg)
+
+        mock_session.query.assert_called_with(mock_job)
+        mock_query = mock_session.query.return_value
+
+        mock_query.filter.assert_called_with(mock_job.id != job_info['id'])
+        mock_filter_id = mock_query.filter.return_value
+
+        mock_filter_id.filter.assert_called_with(mock_job.type == job_info['type'])
+        mock_filter_type = mock_filter_id.filter.return_value
+
+        mock_filter_type.filter.assert_called_with(mock_job.args.contains.return_value)
+        mock_filter_args = mock_filter_type.filter.return_value
+
+        mock_filter_args.filter.assert_called_with(mock_job.end == None)
+        mock_filter_end = mock_filter_args.filter.return_value
+
+        mock_filter_end.order_by.assert_called_with(mock_job.start.desc.return_value)
+        mock_filter_order = mock_filter_end.order_by.return_value
+
+        mock_filter_order.first.assert_called()
+        mock_filter_order.first.result_value = result_job
