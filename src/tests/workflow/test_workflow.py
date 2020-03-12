@@ -36,7 +36,6 @@ WORKFLOWS = {
 }
 
 
-@mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
 @mock.patch("gobworkflow.workflow.workflow.WorkflowTreeNode")
 class TestWorkflow(TestCase):
 
@@ -44,9 +43,103 @@ class TestWorkflow(TestCase):
     def setUp(self):
         self.workflow = Workflow("Workflow", "Step")
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     def test_create(self, mock_tree):
         self.assertIsNotNone(self.workflow)
 
+    @mock.patch("gobworkflow.workflow.workflow.Workflow._build_dynamic_workflow")
+    def test_init_dynamic_workflow(self, mock_build_dynamic_workflow, mock_tree):
+        wf = Workflow('Workflow', 'Step', 'dynamic workflow steps')
+        mock_build_dynamic_workflow.assert_called_with('dynamic workflow steps')
+        mock_tree.from_dict.assert_not_called()
+
+    DYNAMIC_WORKFLOWS = {
+        'wf1': {
+            START: 'wf1_step1',
+            'wf1_step1': {
+                'function': mock.MagicMock(),
+                'next': [{'step': 'wf1_step2'}]
+            },
+            'wf1_step2': {
+                'function': mock.MagicMock(),
+            }
+        },
+        'wf2': {
+            START: 'wf2_step1',
+            'wf2_step1': {
+                'function': mock.MagicMock(),
+                'next': [{'step': 'wf2_step2'}]
+            },
+            'wf2_step2': {
+                'function': mock.MagicMock(),
+            }
+        }
+    }
+
+
+    class MockNode:
+        class MockLeaf:
+            def append_node(self, node):
+                self.appended = node
+
+        def __init__(self, workflow):
+            self.workflow = workflow
+            self.appended = None
+            self.header_params = None
+            self.leafs = [self.MockLeaf()]
+
+        @classmethod
+        def from_dict(cls, workflow):
+            return cls(workflow)
+
+        def append_to_names(self, s):
+            self.appended = s
+
+        def set_header_parameters(self, params):
+            self.header_params = params
+
+        def get_leafs(self):
+            return self.leafs
+
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", DYNAMIC_WORKFLOWS)
+    def test_build_dynamic_workflow(self, mock_tree):
+        dynamic = [
+            {
+                'type': 'workflow',
+                'workflow': 'wf1',
+                'header': {
+                    'attribute1': 'val1',
+                    'attribute2': 'val2'
+                }
+            },
+            {
+                'type': 'workflow',
+                'workflow': 'wf2',
+                'header': {
+                    'attribute3': 'val3',
+                }
+            },
+        ]
+        mock_tree.from_dict = self.MockNode.from_dict
+
+        wf = Workflow('Workflow', dynamic_workflow_steps=dynamic)
+
+        generated = wf._step
+        self.assertEqual(self.DYNAMIC_WORKFLOWS['wf1'], generated.workflow)
+        self.assertEqual('0', generated.appended)
+        self.assertEqual({
+            'attribute1': 'val1',
+            'attribute2': 'val2',
+        }, generated.header_params)
+
+        next_wf = generated.leafs[0].appended
+        self.assertEqual(self.DYNAMIC_WORKFLOWS['wf2'], next_wf.workflow)
+        self.assertEqual('1', next_wf.appended)
+        self.assertEqual({
+            'attribute3': 'val3',
+        }, next_wf.header_params)
+
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
@@ -59,6 +152,7 @@ class TestWorkflow(TestCase):
         self.workflow._function.return_value.assert_called_with({'header': {'process_id': 'Any process id'}})
         job_start.assert_called_with('Workflow', {'header': {'process_id': 'Any process id'}})
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     def test_start_new(self, mock_tree):
         self.workflow.start = mock.MagicMock()
         attrs = {
@@ -74,6 +168,7 @@ class TestWorkflow(TestCase):
             }
         })
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: True)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
@@ -86,6 +181,7 @@ class TestWorkflow(TestCase):
         self.workflow.reject.assert_called_once()
         job_start.assert_called_with("Workflow", {'header': {'process_id': mock.ANY}})
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_start")
@@ -97,6 +193,7 @@ class TestWorkflow(TestCase):
         job_start.assert_called_with('Workflow', {'header': {'process_id': 'Any process id'}, 'summary': {}})
         step_start.assert_called_with('Step', {'process_id': 'Any process id'})
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
@@ -110,6 +207,7 @@ class TestWorkflow(TestCase):
         job_start.assert_called_with('Workflow', {'summary': 'any summary', 'contents': [], 'header': {'process_id': 'Any process id'}})
 
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.job_end")
     def test_handle_result_without_next(self, job_end, mock_tree):
         self.workflow._function = mock.MagicMock()
@@ -119,6 +217,7 @@ class TestWorkflow(TestCase):
         self.workflow._function.assert_not_called()
         job_end.assert_called()
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     def test_handle_result_with_next(self, step_start, mock_tree):
         handler = self.workflow.handle_result()
@@ -127,6 +226,7 @@ class TestWorkflow(TestCase):
         WORKFLOWS["Workflow"]["Next"]["function"].assert_called_with({"header": {}, "summary": {}, "condition": True})
         step_start.assert_called()
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.step_start", mock.MagicMock())
     def test_handle_result_with_multiple_nexts(self, mock_tree):
         handler = self.workflow.handle_result()
@@ -136,6 +236,7 @@ class TestWorkflow(TestCase):
         WORKFLOWS["Workflow"]["Next"]["function"].assert_not_called()
         WORKFLOWS["Workflow"]["OtherNext"]["function"].assert_called_with({"header": {}, "summary": {}, "next": True})
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.step_status")
@@ -156,6 +257,7 @@ class TestWorkflow(TestCase):
         ])
         mock_job_end.assert_called_with('jobid', 'rejected')
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     def test_function_end(self, mock_step_start, mock_tree):
         step = mock.MagicMock()
@@ -163,7 +265,7 @@ class TestWorkflow(TestCase):
         self.workflow.end_of_workflow = mock.MagicMock()
 
         msg = {
-            'header': 'the header',
+            'header': {'the': 'header'},
             'summary': {}
         }
 

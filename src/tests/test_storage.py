@@ -512,9 +512,10 @@ class TestJobRuns(TestCase):
         result = job_runs(job_info, msg)
         self.assertEqual(result, False)
 
+    @mock.patch('gobworkflow.storage.storage.cast')
     @mock.patch('gobworkflow.storage.storage.Job')
     @mock.patch('gobworkflow.storage.storage.session')
-    def test_job_runs_test_query(self, mock_session, mock_job):
+    def test_job_runs_test_query(self, mock_session, mock_job, mock_cast):
         mock_job.id = '1234'
         mock_job.type = 'import'
         mock_job.args = mock.MagicMock()
@@ -551,7 +552,7 @@ class TestJobRuns(TestCase):
         mock_filter_id.filter.assert_called_with(mock_job.type == job_info['type'])
         mock_filter_type = mock_filter_id.filter.return_value
 
-        mock_filter_type.filter.assert_called_with(mock_job.args.contains.return_value)
+        mock_filter_type.filter.assert_called_with(mock_cast.return_value.contains.return_value)
         mock_filter_args = mock_filter_type.filter.return_value
 
         mock_filter_args.filter.assert_called_with(mock_job.end == None)
