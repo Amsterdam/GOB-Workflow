@@ -356,7 +356,7 @@ def job_runs(jobinfo, msg):
     job = session.query(Job)\
         .filter(Job.id != jobinfo['id'])\
         .filter(Job.type == jobinfo['type'])\
-        .filter(Job.args.contains(cast(job_args, ARRAY(String))))\
+        .filter(cast(Job.args, ARRAY(String)).contains(cast(job_args, ARRAY(String))))\
         .filter(Job.end == None)\
         .order_by(Job.start.desc())\
         .first()  # noqa E711 (== None)

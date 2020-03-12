@@ -89,12 +89,29 @@ class TestMain(TestCase):
             },
             'header': {
                 'jobid': 'any job',
-                'stepid': 'any step'
+                'stepid': 'any step',
             },
             'anything': 'any value'
         })
         self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'jobid': 'any job', 'stepid': 'any step' }})
-        mock_workflow.assert_called_with('any workflow', 'any step')
+        mock_workflow.assert_called_with('any workflow', 'any step', dynamic_workflow_steps=None)
+
+        __main__.start_workflow({
+            'workflow': {
+                'workflow_name': 'any workflow',
+                'step_name': 'any step'
+            },
+            'header': {
+                'jobid': 'any job',
+                'stepid': 'any step',
+                'workflow': 'dynamic definition'
+            },
+            'anything': 'any value'
+        })
+        self.assertEqual(workflow.msg, {'anything': 'any value', 'header': {
+            'jobid': 'any job', 'stepid': 'any step', 'workflow': 'dynamic definition'
+        }})
+        mock_workflow.assert_called_with('any workflow', 'any step', dynamic_workflow_steps='dynamic definition')
 
         __main__.start_workflow({
             'workflow': {
@@ -107,7 +124,7 @@ class TestMain(TestCase):
             'anything': 'any value'
         })
         self.assertEqual(workflow.msg, {'anything': 'any value', 'header': { 'jobid': 'any job', 'stepid': 'any step' }})
-        mock_workflow.assert_called_with('any workflow')
+        mock_workflow.assert_called_with('any workflow', dynamic_workflow_steps=None)
 
         workflow.msg = None
         __main__.start_workflow({

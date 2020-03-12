@@ -99,6 +99,13 @@ class TestWorkflowTreeNode(TestCase):
         self.assertEqual('node_appended', wf.name)
         wf.next[0].node.append_to_names.assert_called_with('appended')
 
+    def test_set_header_parameters(self):
+        wf = WorkflowTreeNode('')
+        self.assertEqual({}, wf.header_parameters)
+
+        wf.set_header_parameters({'some': 'parameters'})
+        self.assertEqual({'some': 'parameters'}, wf.header_parameters)
+
 
 class TestNextStep(TestCase):
 

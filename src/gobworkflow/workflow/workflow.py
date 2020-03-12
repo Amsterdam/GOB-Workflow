@@ -28,7 +28,7 @@ from gobworkflow.workflow.tree import WorkflowTreeNode
 
 class Workflow:
 
-    def __init__(self, workflow_name, step_name=None):
+    def __init__(self, workflow_name, step_name=None, dynamic_workflow_steps=None):
         """
         Initializes a workflow.
 
@@ -40,9 +40,58 @@ class Workflow:
         :param step_name: Name of the step within the workflow, default: start step
         """
         self._workflow_name = workflow_name
-        workflow = WorkflowTreeNode.from_dict(WORKFLOWS[self._workflow_name])
+
+        if dynamic_workflow_steps:
+            workflow = self._build_dynamic_workflow(dynamic_workflow_steps)
+        else:
+            workflow = WorkflowTreeNode.from_dict(WORKFLOWS[self._workflow_name])
 
         self._step = workflow if step_name is None else workflow.get_node(step_name)
+
+    def _build_dynamic_workflow(self, workflow_steps: list):
+        """workflow_steps example:
+
+        [
+            {
+                'type': 'workflow',
+                'workflow': IMPORT,
+                'header': {
+                    'catalogue': 'gebieden',
+                    'collection': 'stadsdelen',
+                    'application': 'DGDialog',
+                }
+            },
+            {
+                'type': 'workflow',
+                'workflow': RELATE,
+                'header': {
+                    'catalogue': 'gebieden',
+                    'collection': 'stadsdelen',
+                    'attribute': 'ligt_in_wijk'
+                }
+            },
+        ]
+
+        :param workflow_steps:
+        :return:
+        """
+
+        workflow = None
+
+        for i, step in enumerate(workflow_steps):
+            if step['type'] == 'workflow':
+
+                step_workflow = WorkflowTreeNode.from_dict(WORKFLOWS[step['workflow']])
+                step_workflow.append_to_names(str(i))
+                step_workflow.set_header_parameters(step.get('header', {}))
+
+                if workflow:
+                    for leaf in workflow.get_leafs():
+                        leaf.append_node(step_workflow)
+                else:
+                    workflow = step_workflow
+
+        return workflow
 
     def start_new(self, header_attrs: dict):
         return self.start({'header': {**header_attrs}})
@@ -54,8 +103,10 @@ class Workflow:
         :return:
         """
         job = None
-        job_id = msg.get("header", {}).get("jobid")
+        msg['header'] = msg.get('header', {})  # init header if not present
+        job_id = msg['header'].get("jobid")
         if job_id is None:
+            msg['header'].update(self._step.header_parameters)
             job = job_start(self._workflow_name, msg)
             msg['header'] = {
                 **msg.get('header', {}),
@@ -129,6 +180,8 @@ class Workflow:
             :param msg: Workflow step parameters
             :return:
             """
+            msg['header'] = msg.get('header', {})  # init header if not present
+            msg['header'].update(step.header_parameters)
             step_start(step.name, msg["header"])  # Explicit start of new step
             # Clear any summary from the previous step
             msg['summary'] = {}

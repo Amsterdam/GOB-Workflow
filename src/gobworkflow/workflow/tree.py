@@ -29,6 +29,12 @@ class WorkflowTreeNode:
         self.function = function or (lambda _: None)
         self.next = next or []
 
+        # Extra parameters that should be added to the header when this node is started
+        # Useful for example to switch context in a workflow (e.g. when we first import collection x and want to
+        # subsequently relate attribute y, we add the information for relating y to header_parameters to 'switch
+        # context'
+        self.header_parameters = {}
+
     @staticmethod
     def from_dict(workflow: dict, step_name=START) -> 'WorkflowTreeNode':
         """
@@ -113,6 +119,9 @@ class WorkflowTreeNode:
 
         for n in self.next:
             n.node.append_to_names(append_str)
+
+    def set_header_parameters(self, parameters: dict):
+        self.header_parameters = parameters
 
 
 class NextStep:
