@@ -43,7 +43,7 @@ For example:
                 'collection': 'stadsdelen',
                 'attribute': 'ligt_in_gemeente',
             }
-        },
+        },    
     ] 
 
     workflow = Workflow('my_custom_workflow', dynamic_workflow_steps=dynamic_workflow_steps)
@@ -87,3 +87,18 @@ For completeness, this is how we would create a dynamic workflow by sending a me
 We send the dynamic workflow in the header under the ```workflow``` key, and provide a workflow name  
 in the body just as we start any other workflow, except this workflow name can be anything we find suitable  
 to identify this dynamic workflow.
+
+### Dynamic workflow steps
+The dynamic workflow definition also allows for adding dynamic steps. These look as follows:
+
+    {
+        'type': 'workflow_step',
+        'step_name': 'my_step_name,
+        'header': {
+            ...    
+        }
+    },
+
+When the dynamic workflow builder finds a type 'workflow_step', it uses the ```start_step``` function to
+send a message to the workflow exchange with 'my_step_name' as key. Workflow does not care about who takes this
+message; it is on the implementing side to make sure there is some queue listening to 'my_step_name'.

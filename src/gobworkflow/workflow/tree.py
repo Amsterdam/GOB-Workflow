@@ -18,9 +18,7 @@ class WorkflowTreeNode:
     """Class representing a Workflow (sub)tree."""
 
     def __init__(self, name, function=None, next=None):
-        """Don't use directly. Use from_dict instead.
-
-
+        """
         :param name:
         :param function:
         :param next:
@@ -122,6 +120,16 @@ class WorkflowTreeNode:
 
     def set_header_parameters(self, parameters: dict):
         self.header_parameters = parameters
+
+    def _to_string(self, depth=0):
+        spaces = 2
+
+        return f"{' ' * spaces * depth}{self.name} " \
+               f"({', '.join([f'{k}:{v}' for k, v in self.header_parameters.items()])})\n" + \
+               "".join([n.node.to_string(depth + 1) for n in self.next])
+
+    def __str__(self):
+        return self._to_string()
 
 
 class NextStep:

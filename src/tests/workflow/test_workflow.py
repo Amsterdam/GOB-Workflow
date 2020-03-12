@@ -46,12 +46,20 @@ class TestWorkflow(TestCase):
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     def test_create(self, mock_tree):
         self.assertIsNotNone(self.workflow)
+        self.assertFalse(self.workflow._workflow_changed)
 
     @mock.patch("gobworkflow.workflow.workflow.Workflow._build_dynamic_workflow")
     def test_init_dynamic_workflow(self, mock_build_dynamic_workflow, mock_tree):
         wf = Workflow('Workflow', 'Step', 'dynamic workflow steps')
         mock_build_dynamic_workflow.assert_called_with('dynamic workflow steps')
         mock_tree.from_dict.assert_not_called()
+
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
+    def test_init_changed_workflow(self, mock_tree):
+        mock_tree.from_dict.return_value.get_node.return_value = None
+        wf = Workflow('Workflow', 'Step')
+        self.assertTrue(wf._workflow_changed)
+        self.assertEqual(mock_tree.from_dict.return_value, wf._step)
 
     DYNAMIC_WORKFLOWS = {
         'wf1': {
@@ -79,14 +87,19 @@ class TestWorkflow(TestCase):
 
     class MockNode:
         class MockLeaf:
+            def __init__(self):
+                self.appended = None
+
             def append_node(self, node):
                 self.appended = node
 
-        def __init__(self, workflow):
+        def __init__(self, workflow=None, name=None, function=None):
             self.workflow = workflow
             self.appended = None
             self.header_params = None
             self.leafs = [self.MockLeaf()]
+            self.name = name
+            self.function = function
 
         @classmethod
         def from_dict(cls, workflow):
@@ -138,6 +151,31 @@ class TestWorkflow(TestCase):
         self.assertEqual({
             'attribute3': 'val3',
         }, next_wf.header_params)
+
+    @mock.patch("gobworkflow.workflow.workflow.start_step")
+    def test_build_dynamic_workflow_step(self, mock_start_step, mock_tree):
+        dynamic = [
+            {
+                'type': 'workflow_step',
+                'step_name': 'the_step',
+                'header': {
+                    'attribute1': 'val1',
+                }
+            }
+        ]
+
+        wf = Workflow('Workflow', dynamic_workflow_steps=dynamic)
+
+        self.assertEqual(mock_tree.return_value, wf._step)
+
+    def test_build_dynamic_workflow_notimplemented(self, mock_tree):
+        dynamic = [
+            {
+                'type': 'non_existent',
+            }
+        ]
+        with self.assertRaises(NotImplementedError):
+            wf = Workflow('Workflow', dynamic_workflow_steps=dynamic)
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
@@ -272,3 +310,17 @@ class TestWorkflow(TestCase):
         func = self.workflow._function(step)
         func(msg)
         self.workflow.end_of_workflow.assert_called_with(msg)
+
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
+    def test_handle_result_changed_workflow(self, mock_tree):
+        # When _workflow_changed is set to True, handle_result should run _step instead of the next step
+        wf = Workflow('Workflow', 'Step')
+        wf._workflow_changed = True
+        wf._step = mock.MagicMock()
+        wf._function = mock.MagicMock()
+        msg = mock.MagicMock()
+
+        handle_msg_func = wf.handle_result()
+        self.assertEqual(wf._function.return_value.return_value, handle_msg_func(msg))
+        wf._function.assert_called_with(wf._step)
+        wf._function.return_value.assert_called_with(msg)

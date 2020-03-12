@@ -21,7 +21,7 @@ from gobworkflow.workflow.config import WORKFLOWS
 from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status
 from gobcore.status.heartbeat import STATUS_START, STATUS_REJECTED
 from gobworkflow.storage.storage import job_runs
-from gobworkflow.workflow.start import END_OF_WORKFLOW
+from gobworkflow.workflow.start import END_OF_WORKFLOW, start_step
 
 from gobworkflow.workflow.tree import WorkflowTreeNode
 
@@ -40,6 +40,7 @@ class Workflow:
         :param step_name: Name of the step within the workflow, default: start step
         """
         self._workflow_name = workflow_name
+        self._workflow_changed = False
 
         if dynamic_workflow_steps:
             workflow = self._build_dynamic_workflow(dynamic_workflow_steps)
@@ -47,6 +48,12 @@ class Workflow:
             workflow = WorkflowTreeNode.from_dict(WORKFLOWS[self._workflow_name])
 
         self._step = workflow if step_name is None else workflow.get_node(step_name)
+
+        if not self._step:
+            # Workflow has changed. Step name is no longer in the workflow. Set _workflow_changed flag. We should
+            # run the first step instead of the next in handle_result.
+            self._workflow_changed = True
+            self._step = workflow
 
     def _build_dynamic_workflow(self, workflow_steps: list):
         """workflow_steps example:
@@ -80,16 +87,25 @@ class Workflow:
 
         for i, step in enumerate(workflow_steps):
             if step['type'] == 'workflow':
+                new_step = WorkflowTreeNode.from_dict(WORKFLOWS[step['workflow']])
 
-                step_workflow = WorkflowTreeNode.from_dict(WORKFLOWS[step['workflow']])
-                step_workflow.append_to_names(str(i))
-                step_workflow.set_header_parameters(step.get('header', {}))
+            elif step['type'] == 'workflow_step':
+                new_step = WorkflowTreeNode(
+                    name=step['step_name'],
+                    function=lambda msg: start_step(step['step_name'], msg)
+                )
 
-                if workflow:
-                    for leaf in workflow.get_leafs():
-                        leaf.append_node(step_workflow)
-                else:
-                    workflow = step_workflow
+            else:
+                raise NotImplementedError
+
+            new_step.append_to_names(str(i))
+            new_step.set_header_parameters(step.get('header', {}))
+
+            if workflow:
+                for leaf in workflow.get_leafs():
+                    leaf.append_node(new_step)
+            else:
+                workflow = new_step
 
         return workflow
 
@@ -158,6 +174,10 @@ class Workflow:
             :param msg: The results of the step that was executed
             :return:
             """
+            if self._workflow_changed:
+                # Start at beginning again (self._step points to first step in the workflow now)
+                return self._function(self._step)(msg)
+
             next = [next for next in self._step.next if next.condition(msg)]
             if next:
                 # Execute the first one that matches
