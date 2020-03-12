@@ -15,7 +15,7 @@ If no next steps are defined on can be found the workflow is ended
 """
 from gobworkflow.workflow.start import start_step, has_no_errors
 from gobcore.message_broker.config import RELATE_UPDATE_VIEW, APPLY, COMPARE, FULLUPDATE, PREPARE, EXPORT,\
-    EXPORT_TEST, CHECK_RELATION, RELATE_TABLE
+    EXPORT_TEST, CHECK_RELATION, RELATE_TABLE, END_TO_END_TEST
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
@@ -39,6 +39,8 @@ EXPORT_GENERATE = "generate"
 RELATE = "relate"
 RELATE_UPDATE = "relate"
 RELATE_CHECK = "check"
+
+END_TO_END_TEST_START = "end_to_end_test_start"
 
 # Default check for absence of errors before starting next step
 DEFAULT_CONDITION = has_no_errors
@@ -164,6 +166,12 @@ WORKFLOWS = {
         },
         RELATE_CHECK: {
             "function": lambda msg: start_step(CHECK_RELATION, msg)
+        }
+    },
+    END_TO_END_TEST: {
+        START: END_TO_END_TEST_START,
+        END_TO_END_TEST_START: {
+            "function": lambda msg: start_step(END_TO_END_TEST, msg)
         }
     }
 }
