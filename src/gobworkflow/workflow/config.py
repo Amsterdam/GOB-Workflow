@@ -115,9 +115,12 @@ WORKFLOWS = {
         EXPORT_GENERATE: {
             "function": lambda msg: start_step(EXPORT, msg)
         },
+    },
+    EXPORT_TEST: {
+        START: EXPORT_TEST,
         EXPORT_TEST: {
             "function": lambda msg: start_step(EXPORT_TEST, msg)
-        }
+        },
     },
     RELATE: {
         START: RELATE_UPDATE,
