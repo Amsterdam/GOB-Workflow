@@ -43,11 +43,12 @@ def handle_result(msg):
     stepid = header['stepid']
     # Get the job and step from the database
     job, step = get_job_step(jobid, stepid)
+    dynamic = msg['header'].get('workflow')
     # Start the result handler method with the given message
     if hooks.has_hooks(msg):
         hooks.handle_result(msg)
     elif job and step:
-        Workflow(job.type, step.name).handle_result()(msg)
+        Workflow(job.type, step.name, dynamic_workflow_steps=dynamic).handle_result()(msg)
 
 
 def start_workflow(msg):
@@ -60,14 +61,15 @@ def start_workflow(msg):
     # Retrieve the workflow parameters
     workflow_name = msg['workflow']['workflow_name']
     step_name = msg['workflow'].get('step_name')
+    dynamic = msg['header'].get('workflow')
     # Delete the parameters so that they do not get transferred in the workflow
     del msg['workflow']
 
     # Start the workflow with the given message
     if workflow_name and step_name:
-        Workflow(workflow_name, step_name).start(msg)
+        Workflow(workflow_name, step_name, dynamic_workflow_steps=dynamic).start(msg)
     elif workflow_name:
-        Workflow(workflow_name).start(msg)
+        Workflow(workflow_name, dynamic_workflow_steps=dynamic).start(msg)
     else:
         Workflow.end_of_workflow(msg)
 

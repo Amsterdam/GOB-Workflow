@@ -17,16 +17,18 @@ If not, the workflow is ended
 """
 from gobcore.logging.logger import logger
 
-from gobworkflow.workflow.config import WORKFLOWS, START, DEFAULT_CONDITION
+from gobworkflow.workflow.config import WORKFLOWS
 from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status
 from gobcore.status.heartbeat import STATUS_START, STATUS_REJECTED
 from gobworkflow.storage.storage import job_runs
-from gobworkflow.workflow.start import END_OF_WORKFLOW
+from gobworkflow.workflow.start import END_OF_WORKFLOW, start_step
+
+from gobworkflow.workflow.tree import WorkflowTreeNode
 
 
-class Workflow():
+class Workflow:
 
-    def __init__(self, workflow_name, step_name=None):
+    def __init__(self, workflow_name, step_name=None, dynamic_workflow_steps=None):
         """
         Initializes a workflow.
 
@@ -38,10 +40,74 @@ class Workflow():
         :param step_name: Name of the step within the workflow, default: start step
         """
         self._workflow_name = workflow_name
-        self._workflow = WORKFLOWS[self._workflow_name]
+        self._workflow_changed = False
 
-        self._step_name = self._workflow[START] if step_name is None else step_name
-        self._step = self._workflow[self._step_name]
+        if dynamic_workflow_steps:
+            workflow = self._build_dynamic_workflow(dynamic_workflow_steps)
+        else:
+            workflow = WorkflowTreeNode.from_dict(WORKFLOWS[self._workflow_name])
+
+        self._step = workflow if step_name is None else workflow.get_node(step_name)
+
+        if not self._step:
+            # Workflow has changed. Step name is no longer in the workflow. Set _workflow_changed flag. We should
+            # run the first step instead of the next in handle_result.
+            self._workflow_changed = True
+            self._step = workflow
+
+    def _build_dynamic_workflow(self, workflow_steps: list):
+        """workflow_steps example:
+
+        [
+            {
+                'type': 'workflow',
+                'workflow': IMPORT,
+                'header': {
+                    'catalogue': 'gebieden',
+                    'collection': 'stadsdelen',
+                    'application': 'DGDialog',
+                }
+            },
+            {
+                'type': 'workflow',
+                'workflow': RELATE,
+                'header': {
+                    'catalogue': 'gebieden',
+                    'collection': 'stadsdelen',
+                    'attribute': 'ligt_in_wijk'
+                }
+            },
+        ]
+
+        :param workflow_steps:
+        :return:
+        """
+
+        workflow = None
+
+        for i, step in enumerate(workflow_steps):
+            if step['type'] == 'workflow':
+                new_step = WorkflowTreeNode.from_dict(WORKFLOWS[step['workflow']])
+
+            elif step['type'] == 'workflow_step':
+                new_step = WorkflowTreeNode(
+                    name=step['step_name'],
+                    function=lambda msg: start_step(step['step_name'], msg)
+                )
+
+            else:
+                raise NotImplementedError
+
+            new_step.append_to_names(str(i))
+            new_step.set_header_parameters(step.get('header', {}))
+
+            if workflow:
+                for leaf in workflow.get_leafs():
+                    leaf.append_node(new_step)
+            else:
+                workflow = new_step
+
+        return workflow
 
     def start_new(self, header_attrs: dict):
         return self.start({'header': {**header_attrs}})
@@ -53,16 +119,18 @@ class Workflow():
         :return:
         """
         job = None
-        job_id = msg.get("header", {}).get("jobid")
+        msg['header'] = msg.get('header', {})  # init header if not present
+        job_id = msg['header'].get("jobid")
         if job_id is None:
+            msg['header'].update(self._step.header_parameters)
             job = job_start(self._workflow_name, msg)
             msg['header'] = {
                 **msg.get('header', {}),
                 'process_id': job['id']
             }
-            if job_runs(job):
+            if job_runs(job, msg):
                 return self.reject(self._workflow_name, msg, job)
-        self._function(self._step_name)(msg)
+        self._function(self._step)(msg)
         return job
 
     def reject(self, action, msg, job):
@@ -106,17 +174,21 @@ class Workflow():
             :param msg: The results of the step that was executed
             :return:
             """
-            next = [next for next in self._next_steps() if self._condition(next)(msg)]
+            if self._workflow_changed:
+                # Start at beginning again (self._step points to first step in the workflow now)
+                return self._function(self._step)(msg)
+
+            next = [next for next in self._step.next if next.condition(msg)]
             if next:
                 # Execute the first one that matches
-                self._function(next[0]["step"])(msg)
+                self._function(next[0].node)(msg)
             else:
                 # No next => end of workflow reached
                 self.end_of_workflow(msg)
 
         return handle_msg
 
-    def _function(self, step_name):
+    def _function(self, step: WorkflowTreeNode):
         """
         Get the function that is to be executed for the workflow step with the given name
         :param step_name: The name of the step within the workflow
@@ -128,28 +200,13 @@ class Workflow():
             :param msg: Workflow step parameters
             :return:
             """
-            step_start(step_name, msg["header"])  # Explicit start of new step
+            msg['header'] = msg.get('header', {})  # init header if not present
+            msg['header'].update(step.header_parameters)
+            step_start(step.name, msg["header"])  # Explicit start of new step
             # Clear any summary from the previous step
             msg['summary'] = {}
-            result = self._workflow[step_name].get("function", lambda _: None)(msg)
+            result = step.function(msg)
             if result == END_OF_WORKFLOW:
                 self.end_of_workflow(msg)
 
         return exec_step
-
-    def _next_steps(self):
-        """
-        Get the next steps for the current workflow step
-        :return: The next steps, or an empty list when no next steps exists (end of workflow)
-        """
-        return self._step.get("next", [])
-
-    def _condition(self, next):
-        """
-        Get the function that tests whether a next step is eligible for execution given the current result (msg)
-
-        Default a next step matches unconditionally
-        :param next: A next step config
-        :return:
-        """
-        return next.get("condition", DEFAULT_CONDITION)

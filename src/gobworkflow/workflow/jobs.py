@@ -27,7 +27,7 @@ def job_start(job_name, msg):
     """
     timestamp = _timestamp()
     # Concatenate all the non-header fields
-    args = [str(val) for key, val in sorted(msg.get('header', {}).items())]
+    args = [str(val) for key, val in msg.get('header', {}).items() if key not in ['workflow']]
     job_info = {
         "name": f"{job_name}.{'.'.join(args)}",
         "type": job_name,
