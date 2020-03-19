@@ -512,22 +512,23 @@ class TestJobRuns(TestCase):
         result = job_runs(job_info, msg)
         self.assertEqual(result, False)
 
+    @mock.patch('gobworkflow.storage.storage.ARRAY')
     @mock.patch('gobworkflow.storage.storage.cast')
     @mock.patch('gobworkflow.storage.storage.Job')
     @mock.patch('gobworkflow.storage.storage.session')
-    def test_job_runs_test_query(self, mock_session, mock_job, mock_cast):
+    def test_job_runs_test_query(self, mock_session, mock_job, mock_cast, mock_array):
         mock_job.id = '1234'
         mock_job.type = 'import'
         mock_job.args = mock.MagicMock()
         mock_job.start = mock.MagicMock()
 
-        msg = {'header': {'catalogue': 'cat', 'collection': 'col'}}
+        # Check if all variables are used in the query
+        msg = {'header': {'catalogue': 'cat', 'collection': 'col', 'attribute': 'attr', 'destination': 'dest', 'extra': 'not used'}}
 
         class Job:
             def __init__(self, start):
                 self.start = start
                 self.id = '1234'
-
 
         result_job = Job( datetime.datetime.now())
 
@@ -563,3 +564,6 @@ class TestJobRuns(TestCase):
 
         mock_filter_order.first.assert_called()
         mock_filter_order.first.result_value = result_job
+
+        # Assert all job args are called
+        mock_cast.assert_called_with(['cat', 'col', 'attr', 'dest'], mock_array.return_value)
