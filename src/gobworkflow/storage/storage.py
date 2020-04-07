@@ -348,8 +348,8 @@ def job_get(job_id):
 def job_runs(jobinfo, msg):
     header = msg.get('header')
 
-    # Check job duplicates on col/cat/attr, destination is used in export to export to different locations
-    check_args = ['catalogue', 'collection', 'attribute', 'destination']
+    # Check job duplicates source/cat/col/attr, destination is used in export to export to different locations
+    check_args = ['source', 'catalogue', 'collection', 'attribute', 'destination']
     job_args = [header.get(key) for key in check_args if header.get(key)]
 
     # Filter jobs on type and catalog / collection / attribute if available
