@@ -61,15 +61,16 @@ def start_workflow(msg):
     # Retrieve the workflow parameters
     workflow_name = msg['workflow']['workflow_name']
     step_name = msg['workflow'].get('step_name')
+    retry_time = msg['workflow'].get('retry_time', 0)
     dynamic = msg['header'].get('workflow')
     # Delete the parameters so that they do not get transferred in the workflow
     del msg['workflow']
 
     # Start the workflow with the given message
     if workflow_name and step_name:
-        Workflow(workflow_name, step_name, dynamic_workflow_steps=dynamic).start(msg)
+        Workflow(workflow_name, step_name, dynamic_workflow_steps=dynamic).start(msg, retry_time)
     elif workflow_name:
-        Workflow(workflow_name, dynamic_workflow_steps=dynamic).start(msg)
+        Workflow(workflow_name, dynamic_workflow_steps=dynamic).start(msg, retry_time)
     else:
         Workflow.end_of_workflow(msg)
 
