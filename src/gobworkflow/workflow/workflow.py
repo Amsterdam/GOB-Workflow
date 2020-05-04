@@ -15,7 +15,10 @@ The result is interpreted by the rules of the workflow
 If a next step is found then this step is started
 If not, the workflow is ended
 """
+import copy
+
 from gobcore.logging.logger import logger
+from gobcore.workflow.start_workflow import retry_workflow
 
 from gobworkflow.workflow.config import WORKFLOWS
 from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status
@@ -40,6 +43,7 @@ class Workflow:
         :param step_name: Name of the step within the workflow, default: start step
         """
         self._workflow_name = workflow_name
+        self._step_name = step_name
         self._workflow_changed = False
 
         if dynamic_workflow_steps:
@@ -109,15 +113,18 @@ class Workflow:
 
         return workflow
 
-    def start_new(self, header_attrs: dict):
-        return self.start({'header': {**header_attrs}})
+    def start_new(self, header_attrs: dict, retry_time=0):
+        return self.start({'header': {**header_attrs}}, retry_time)
 
-    def start(self, msg):
+    def start(self, msg, retry_time=0):
         """
         Start a workflow
         :param msg: The parameters to the workflow
         :return:
         """
+        # Keep the original message for a possible retry
+        original_msg = copy.deepcopy(msg)
+
         job = None
         msg['header'] = msg.get('header', {})  # init header if not present
         job_id = msg['header'].get("jobid")
@@ -129,11 +136,39 @@ class Workflow:
                 'process_id': job['id']
             }
             if job_runs(job, msg):
-                return self.reject(self._workflow_name, msg, job)
+                self.reject(msg, job)
+                return self.retry_or_fail(original_msg, retry_time)
         self._function(self._step)(msg)
         return job
 
-    def reject(self, action, msg, job):
+    def retry_or_fail(self, msg, retry_time):
+        """
+        If any positive retry time has been specified the workflow message will be resent
+        If not, an error message is logged
+
+        :param msg: workflow message
+        :param retry_time: time to retry starting the workflow
+
+        :return:
+        """
+        if retry_time > 0:
+            if not msg.get('workflow'):
+                # Initialize the workflow part of the message for the current workflow
+                msg['workflow'] = {
+                    'workflow_name': self._workflow_name,
+                    'step_name': self._step_name,
+                    'retry_time': retry_time
+                }
+            if retry_workflow(msg):
+                # Succesfully retried workflow
+                return
+
+        # No retries left of retry_workflow has failed
+        action = self._workflow_name.upper()
+        logger.configure(msg, action)
+        logger.error(f"Job {action} start rejected, job is already active")
+
+    def reject(self, msg, job):
         """
         Reject a message because the job is already active within GOB
 
@@ -146,8 +181,6 @@ class Workflow:
         msg["header"]["entity"] = msg["header"].get('collection')
         step = step_start("accept", msg['header'])
         step_status(job['id'], step['id'], STATUS_START)
-        logger.configure(msg, action.upper())
-        logger.error(f"Job {action} start rejected, job is already active")
         # End the workflow step and then the workflow job
         step_status(job['id'], step['id'], STATUS_REJECTED)
         return job_end(job['id'], STATUS_REJECTED)

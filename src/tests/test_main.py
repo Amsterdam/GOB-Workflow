@@ -14,7 +14,7 @@ class MockWorkflow:
     def handle_result(self):
         return self.handle_msg
 
-    def start(self, msg):
+    def start(self, msg, retry_time=0):
         self.msg = msg
 
 class TestMain(TestCase):
