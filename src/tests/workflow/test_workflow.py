@@ -61,6 +61,42 @@ class TestWorkflow(TestCase):
         self.assertTrue(wf._workflow_changed)
         self.assertEqual(mock_tree.from_dict.return_value, wf._step)
 
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
+    @mock.patch("gobworkflow.workflow.workflow.logger")
+    @mock.patch("gobworkflow.workflow.workflow.retry_workflow")
+    def test_retry_or_fail(self, mock_retry_workflow, mock_logger, mock_tree):
+        mock_tree.from_dict.return_value.get_node.return_value = None
+
+        # Fail if no retry is specified
+        wf = Workflow('Workflow', 'Step')
+        msg = {}
+        wf.retry_or_fail(msg, 0)
+        mock_retry_workflow.assert_not_called()
+        mock_logger.error.assert_called()
+        mock_logger.error.reset_mock()
+
+        # Create a workflow spec if this is missing
+        wf.retry_or_fail(msg, 10)
+        mock_retry_workflow.assert_called_with({
+            'workflow': {
+                'workflow_name': 'Workflow',
+                'step_name': 'Step',
+                'retry_time': 10}})
+        mock_logger.error.assert_not_called()
+
+        # Do not overwrite an existing workflow spec
+        msg = {
+            'workflow': 'my workflow'
+        }
+        wf.retry_or_fail(msg, 10)
+        mock_retry_workflow.assert_called_with({'workflow': 'my workflow'})
+        mock_logger.error.assert_not_called()
+
+        # Fail if retry fails
+        mock_retry_workflow.return_value = False
+        wf.retry_or_fail(msg, 10)
+        mock_logger.error.assert_called()
+
     DYNAMIC_WORKFLOWS = {
         'wf1': {
             START: 'wf1_step1',
@@ -204,7 +240,7 @@ class TestWorkflow(TestCase):
                 'h1': 'v1',
                 'h2': 'v2',
             }
-        })
+        }, 0)
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
@@ -284,7 +320,7 @@ class TestWorkflow(TestCase):
             'id': 'stepid',
         }
 
-        self.assertEqual(mock_job_end.return_value, self.workflow.reject('action', {'header': {}}, {'id': 'jobid'}))
+        self.assertEqual(mock_job_end.return_value, self.workflow.reject({'header': {}}, {'id': 'jobid'}))
         mock_step_start.assert_called_with('accept', {
             'process_id': 'jobid',
             'entity': None
