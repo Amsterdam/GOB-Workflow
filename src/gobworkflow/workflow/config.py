@@ -14,8 +14,9 @@ When one or more next steps match its condition, the first one will be executed
 If no next steps are defined on can be found the workflow is ended
 """
 from gobworkflow.workflow.start import start_step, has_no_errors
-from gobcore.message_broker.config import RELATE_UPDATE_VIEW, APPLY, COMPARE, FULLUPDATE, PREPARE, EXPORT,\
-    EXPORT_TEST, CHECK_RELATION, RELATE_TABLE, END_TO_END_TEST, DATA_CONSISTENCY_TEST
+from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE,\
+    RELATE_PREPARE, RELATE_PROCESS, RELATE_CHECK, RELATE_UPDATE_VIEW,\
+    EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
@@ -30,15 +31,12 @@ APPLY_EVENTS = "apply_events"
 IMPORT_COMPARE = "compare"
 IMPORT_UPLOAD = "upload"
 UPLOAD_RELATION = "upload_relation"
-UPDATE_VIEW = "update_view"
 
 # The export workflow and steps
 EXPORT_GENERATE = "generate"
 
-# The relate workflow and steps
+# The relate workflow
 RELATE = "relate"
-RELATE_UPDATE = "relate"
-RELATE_CHECK = "check"
 
 END_TO_END_TEST_START = "end_to_end_test_start"
 DATA_CONSISTENCY_TEST_START = "data_consistency_test_start"
@@ -124,18 +122,18 @@ WORKFLOWS = {
         },
     },
     RELATE: {
-        START: RELATE_UPDATE,
-        RELATE_UPDATE: {
-            "function": lambda msg: start_step(RELATE, msg),
+        START: RELATE_PREPARE,
+        RELATE_PREPARE: {
+            "function": lambda msg: start_step(RELATE_PREPARE, msg),
             "next": [
                 {
-                    "step": RELATE_TABLE,
+                    "step": RELATE_PROCESS,
                     "condition": lambda msg: not msg.get('header', {}).get('is_split', False),
                 }
             ]
         },
-        RELATE_TABLE: {
-            "function": lambda msg: start_step(RELATE_TABLE, msg),
+        RELATE_PROCESS: {
+            "function": lambda msg: start_step(RELATE_PROCESS, msg),
             "next": [
                 {
                     "step": IMPORT_UPLOAD,
@@ -155,11 +153,11 @@ WORKFLOWS = {
             "next": [
                 {
                     "condition": lambda _: True,
-                    "step": UPDATE_VIEW,
+                    "step": RELATE_UPDATE_VIEW,
                 }
             ]
         },
-        UPDATE_VIEW: {
+        RELATE_UPDATE_VIEW: {
             "function": lambda msg: start_step(RELATE_UPDATE_VIEW, msg),
             "next": [
                 {
@@ -169,7 +167,7 @@ WORKFLOWS = {
             ]
         },
         RELATE_CHECK: {
-            "function": lambda msg: start_step(CHECK_RELATION, msg)
+            "function": lambda msg: start_step(RELATE_CHECK, msg)
         }
     },
     END_TO_END_TEST: {
