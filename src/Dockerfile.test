@@ -1,4 +1,4 @@
-FROM amsterdam/docker_python:latest
+FROM amsterdam/python:3.7-buster
 MAINTAINER datapunt@amsterdam.nl
 
 # Copy .jenkins scripts to where jenkins / ansible expect them
