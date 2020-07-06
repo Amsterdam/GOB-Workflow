@@ -223,8 +223,8 @@ class TestWorkflow(TestCase):
         self.workflow.start({})
 
         self.workflow._function.assert_called_with(self.workflow._step)
-        self.workflow._function.return_value.assert_called_with({'header': {'process_id': 'Any process id'}})
-        job_start.assert_called_with('Workflow', {'header': {'process_id': 'Any process id'}})
+        self.workflow._function.return_value.assert_called_with({'header': {}})
+        job_start.assert_called_with('Workflow', {'header': {}})
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     def test_start_new(self, mock_tree):
@@ -264,8 +264,8 @@ class TestWorkflow(TestCase):
         job_start.return_value = {'id': "Any process id"}
         WORKFLOWS["Workflow"]["Step"]["function"] = lambda _ : END_OF_WORKFLOW
         self.workflow.start({})
-        job_start.assert_called_with('Workflow', {'header': {'process_id': 'Any process id'}, 'summary': {}})
-        step_start.assert_called_with('Step', {'process_id': 'Any process id'})
+        job_start.assert_called_with('Workflow', {'header': {}, 'summary': {}})
+        step_start.assert_called_with('Step', {})
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
@@ -276,9 +276,9 @@ class TestWorkflow(TestCase):
         self.workflow._function = mock.MagicMock()
         self.workflow.start({'summary': 'any summary', 'contents': []})
 
-        self.workflow._function.return_value.assert_called_with({'summary': 'any summary', 'contents': [], 'header': {'process_id': 'Any process id'}})
+        self.workflow._function.return_value.assert_called_with({'summary': 'any summary', 'contents': [], 'header': {}})
 
-        job_start.assert_called_with('Workflow', {'summary': 'any summary', 'contents': [], 'header': {'process_id': 'Any process id'}})
+        job_start.assert_called_with('Workflow', {'summary': 'any summary', 'contents': [], 'header': {}})
 
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
