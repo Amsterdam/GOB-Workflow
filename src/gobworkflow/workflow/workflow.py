@@ -133,9 +133,9 @@ class Workflow:
             job = job_start(self._workflow_name, msg)
             msg['header'] = {
                 **msg.get('header', {}),
-                'process_id': job['id']
             }
             if job_runs(job, msg):
+                msg['header']['process_id'] = job['id']
                 self.reject(msg, job)
                 return self.retry_or_fail(original_msg, retry_time)
         self._function(self._step)(msg)
