@@ -126,7 +126,7 @@ class WorkflowTreeNode:
 
         return f"{' ' * spaces * depth}{self.name} " \
                f"({', '.join([f'{k}:{v}' for k, v in self.header_parameters.items()])})\n" + \
-               "".join([n.node.to_string(depth + 1) for n in self.next])
+               "".join([n.node._to_string(depth + 1) for n in self.next])
 
     def __str__(self):
         return self._to_string()
