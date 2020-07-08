@@ -96,7 +96,7 @@ class Workflow:
             elif step['type'] == 'workflow_step':
                 new_step = WorkflowTreeNode(
                     name=step['step_name'],
-                    function=lambda msg: start_step(step['step_name'], msg)
+                    function=lambda msg, step_name=step['step_name']: start_step(step_name, msg)
                 )
 
             else:
