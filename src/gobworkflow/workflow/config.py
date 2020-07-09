@@ -82,7 +82,13 @@ WORKFLOWS = {
             ],
         },
         UPDATE_MODEL: {
-            "function": lambda msg: start_step(APPLY, msg),
+            "function": lambda msg: start_step(APPLY, {
+                **msg,
+                "header": {
+                    **msg["header"],
+                    "suppress_notifications": True,
+                }
+            }),
             "next": [
                 {
                     "step": IMPORT_COMPARE
@@ -90,7 +96,13 @@ WORKFLOWS = {
             ],
         },
         IMPORT_COMPARE: {
-            "function": lambda msg: start_step(COMPARE, msg),
+            "function": lambda msg: start_step(COMPARE, {
+                **msg,
+                "header": {
+                    **msg["header"],
+                    "suppress_notifications": False,
+                }
+            }),
             "next": [
                 {
                     "step": IMPORT_UPLOAD
