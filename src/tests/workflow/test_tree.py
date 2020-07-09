@@ -108,9 +108,9 @@ class TestWorkflowTreeNode(TestCase):
 
     def test_to_string(self):
         next1 = MagicMock()
-        next1.node.to_string.return_value = '    child1\n'
+        next1.node._to_string.return_value = '    child1\n'
         next2 = MagicMock()
-        next2.node.to_string.return_value = '    child2\n'
+        next2.node._to_string.return_value = '    child2\n'
 
         wf = WorkflowTreeNode('name')
         wf.header_parameters = {'k1': 'v1', 'k2': 'v2'}
@@ -118,8 +118,8 @@ class TestWorkflowTreeNode(TestCase):
 
         expected = '  name (k1:v1, k2:v2)\n    child1\n    child2\n'
         self.assertEqual(expected, wf._to_string(1))
-        next1.node.to_string.assert_called_with(2)
-        next2.node.to_string.assert_called_with(2)
+        next1.node._to_string.assert_called_with(2)
+        next2.node._to_string.assert_called_with(2)
 
     def test_str(self):
         wf = WorkflowTreeNode('')
