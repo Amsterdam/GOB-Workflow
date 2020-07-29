@@ -19,12 +19,29 @@ class TestJobManagement(TestCase):
     def test_job_start(self, job_save):
         job_save.return_value = Job("any id")
         job = job_start("any job", {"header": {"a": 1, "b": "string", "c": True}})
+
+        timestamp = int(job["start"].replace(microsecond=0).timestamp())
+
+        self.assertEqual(job["name"], "any job.1.string.True")
         self.assertEqual(job["name"], "any job.1.string.True")
         self.assertEqual(job["type"], "any job")
         self.assertEqual(job["args"], ["1", "string", "True"])
         self.assertIsInstance(job["start"], datetime.datetime)
+        self.assertEqual(job["process_id"], f'{timestamp}.{job["name"]}')
         self.assertIsNone(job["end"])
         self.assertEqual(job["status"], "started")
+
+    @mock.patch("gobworkflow.workflow.jobs.job_save")
+    def test_job_start_with_process_id(self, job_save):
+        job_save.return_value = Job("any id")
+        job = job_start("any job", {"header": {"a": 1, "b": "string", "c": True, "process_id": "any process"}})
+        self.assertEqual(job["name"], "any job.1.string.True.any process")
+        self.assertEqual(job["type"], "any job")
+        self.assertEqual(job["args"], ["1", "string", "True", "any process"])
+        self.assertIsInstance(job["start"], datetime.datetime)
+        self.assertIsNone(job["end"])
+        self.assertEqual(job["status"], "started")
+        self.assertEqual(job["process_id"], "any process")
 
     @mock.patch("gobworkflow.workflow.jobs.job_update", mock.MagicMock())
     def test_job_end(self):
