@@ -17,7 +17,7 @@ def _timestamp():
     return datetime.datetime.utcnow()
 
 
-def job_start(job_name, msg):
+def job_start(job_type, msg):
     """
     Register the start of a job
 
@@ -28,9 +28,15 @@ def job_start(job_name, msg):
     timestamp = _timestamp()
     # Concatenate all the non-header fields
     args = [str(val) for key, val in msg.get('header', {}).items() if key not in ['workflow']]
+
+    job_name = f"{job_type}.{'.'.join(args)}"
+    start_timestamp = int(_timestamp().replace(microsecond=0).timestamp())
+    process_id = msg.get('header', {}).get('process_id', f"{start_timestamp}.{job_name}")
+
     job_info = {
-        "name": f"{job_name}.{'.'.join(args)}",
-        "type": job_name,
+        "name": job_name,
+        "process_id": process_id,
+        "type": job_type,
         "args": args,
         "start": timestamp,
         "end": None,
@@ -40,8 +46,9 @@ def job_start(job_name, msg):
     job = job_save(job_info)
     # Store the job and register its id
     job_info["id"] = job.id
-    # Enhance the message header with the job id
+    # Enhance the message header with the job id and process_id
     msg["header"]["jobid"] = job.id
+    msg["header"]["process_id"] = process_id
     return job_info
 
 
