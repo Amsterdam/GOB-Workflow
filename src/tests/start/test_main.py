@@ -96,13 +96,32 @@ class TestWorkflowCommands(TestCase):
             'default': 'default value',
             'choices': ['a', 'b'],
             'required': True,
+            'description': 'some description'
         })
 
         expected_result = {
             'type': str,
-            'help': '',
+            'help': 'some description',
             'default': 'default value',
             'choices': ['a', 'b']
+        }
+
+        self.assertEqual(expected_result, wfc._extract_parser_arg_kwargs(start_command_arg))
+
+    @mock.patch("gobworkflow.start.__main__.WorkflowCommands.execute_command")
+    def test_extract_parser_arguments_store_true(self, mock_execute, mock_start_commandc, mock_parser):
+        wfc = WorkflowCommands()
+        start_command_arg = StartCommandArgument({
+            'name': 'command name',
+            'default': 'default value',
+            'choices': ['a', 'b'],
+            'required': True,
+            'action': 'store_true',
+        })
+
+        expected_result = {
+            'help': '',
+            'action': 'store_true'
         }
 
         self.assertEqual(expected_result, wfc._extract_parser_arg_kwargs(start_command_arg))
