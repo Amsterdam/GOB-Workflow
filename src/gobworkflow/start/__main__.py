@@ -54,9 +54,17 @@ The GOB workflow commands are:'''
 
     def _extract_parser_arg_kwargs(self, arg: StartCommandArgument):
         kwargs = {
-            'type': str,
             'help': arg.description,
         }
+
+        if arg.action:
+            kwargs['action'] = arg.action
+
+        # If action 'store_true', the rest of the args should not be added
+        if kwargs.get('action') == 'store_true':
+            return kwargs
+
+        kwargs['type'] = str
 
         if not arg.required:
             kwargs['nargs'] = '?'
