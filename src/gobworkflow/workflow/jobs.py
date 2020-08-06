@@ -45,6 +45,7 @@ def job_start(job_type, msg):
         "catalogue": msg.get('header', {}).get('catalogue'),
         "collection": msg.get('header', {}).get('collection'),
         "attribute": msg.get('header', {}).get('attribute'),
+        "application": msg.get('header', {}).get('application'),
     }
     job = job_save(job_info)
     # Store the job and register its id
