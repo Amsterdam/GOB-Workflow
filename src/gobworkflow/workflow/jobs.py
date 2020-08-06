@@ -41,7 +41,10 @@ def job_start(job_type, msg):
         "start": timestamp,
         "end": None,
         "status": STATUS_START,
-        "user": msg.get("header", {}).get("user")
+        "user": msg.get("header", {}).get("user"),
+        "catalogue": msg.get('header', {}).get('catalogue'),
+        "collection": msg.get('header', {}).get('collection'),
+        "attribute": msg.get('header', {}).get('attribute'),
     }
     job = job_save(job_info)
     # Store the job and register its id
