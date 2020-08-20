@@ -23,7 +23,7 @@ from gobcore.workflow.start_workflow import retry_workflow
 from gobworkflow.workflow.config import WORKFLOWS
 from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status
 from gobcore.status.heartbeat import STATUS_START, STATUS_REJECTED
-from gobworkflow.storage.storage import job_runs
+from gobworkflow.storage.storage import job_runs, job_get, job_update
 from gobworkflow.workflow.start import END_OF_WORKFLOW, start_step
 
 from gobworkflow.workflow.tree import WorkflowTreeNode
@@ -191,6 +191,19 @@ class Workflow:
         logger.info(f"End of workflow")
         job_end(msg["header"].get("jobid"))
 
+    def _update_job_log_counts(self, job, log_counts):
+        current_counts = job.log_counts or {}
+
+        for log_type, count in log_counts.items():
+            if log_type not in current_counts:
+                current_counts[log_type] = 0
+            current_counts[log_type] += count
+
+        job_update({
+            'id': job.id,
+            'log_counts': current_counts,
+        })
+
     def handle_result(self):
         """
         Get a handler that processes the result of a workflow step
@@ -207,6 +220,9 @@ class Workflow:
             :param msg: The results of the step that was executed
             :return:
             """
+            job = job_get(msg['header'].get('jobid'))
+            self._update_job_log_counts(job, msg.get('summary', {}).get('log_counts', {}))
+
             if self._workflow_changed:
                 # Start at beginning again (self._step points to first step in the workflow now)
                 return self._function(self._step)(msg)
