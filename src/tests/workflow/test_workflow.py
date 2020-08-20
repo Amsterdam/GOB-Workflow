@@ -280,20 +280,48 @@ class TestWorkflow(TestCase):
 
         job_start.assert_called_with('Workflow', {'summary': 'any summary', 'contents': [], 'header': {}})
 
+    @mock.patch("gobworkflow.workflow.workflow.job_update")
+    def test_update_job_log_counts(self, mock_job_update, mock_tree):
+        job = type('Job', (), {
+            'id': 'jobid',
+            'log_counts': {
+                'data_warnings': 5,
+                'data_errors': 2
+            }
+        })
+        log_counts = {
+            'data_warnings': 2,
+            'data_info': 1
+        }
+        self.workflow._update_job_log_counts(job, log_counts)
+        mock_job_update.assert_called_with({
+            'id': 'jobid',
+            'log_counts': {
+                'data_warnings': 7,
+                'data_errors': 2,
+                'data_info': 1,
+            }
+        })
+
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.job_end")
-    def test_handle_result_without_next(self, job_end, mock_tree):
+    @mock.patch("gobworkflow.workflow.workflow.job_get")
+    def test_handle_result_without_next(self, job_get, job_end, mock_tree):
+        self.workflow._update_job_log_counts = mock.MagicMock()
         self.workflow._function = mock.MagicMock()
         handler = self.workflow.handle_result()
-        handler({"header": {}, "condition": False})
+        handler({"header": {}, "condition": False, "summary": {"log_counts": {"data_warnings": 5}}})
 
         self.workflow._function.assert_not_called()
         job_end.assert_called()
+        self.workflow._update_job_log_counts.assert_called_with(job_get(), {"data_warnings": 5})
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
-    def test_handle_result_with_next(self, step_start, mock_tree):
+    @mock.patch("gobworkflow.workflow.workflow.job_get")
+    def test_handle_result_with_next(self, job_get, step_start, mock_tree):
+        self.workflow._update_job_log_counts = mock.MagicMock()
         handler = self.workflow.handle_result()
         handler({"header": {}, "condition": True})
 
@@ -302,7 +330,9 @@ class TestWorkflow(TestCase):
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.step_start", mock.MagicMock())
-    def test_handle_result_with_multiple_nexts(self, mock_tree):
+    @mock.patch("gobworkflow.workflow.workflow.job_get")
+    def test_handle_result_with_multiple_nexts(self, job_get, mock_tree):
+        self.workflow._update_job_log_counts = mock.MagicMock()
         handler = self.workflow.handle_result()
         handler({"header": {}, "next": True})
 
