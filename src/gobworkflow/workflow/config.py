@@ -16,7 +16,8 @@ If no next steps are defined on can be found the workflow is ended
 from gobworkflow.workflow.start import start_step, has_no_errors
 from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE,\
     RELATE_PREPARE, RELATE_PROCESS, RELATE_CHECK, RELATE_UPDATE_VIEW,\
-    EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST, BRP_REGRESSION_TEST
+    EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST, BRP_REGRESSION_TEST,\
+    DISTRIBUTE
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
@@ -41,6 +42,7 @@ RELATE = "relate"
 END_TO_END_TEST_START = "end_to_end_test_start"
 DATA_CONSISTENCY_TEST_START = "data_consistency_test_start"
 BRP_REGRESSION_TEST_START = "brp_regression_test_start"
+DISTRIBUTE_START = "distribute_start"
 
 # Default check for absence of errors before starting next step
 DEFAULT_CONDITION = has_no_errors
@@ -199,6 +201,12 @@ WORKFLOWS = {
         START: BRP_REGRESSION_TEST_START,
         BRP_REGRESSION_TEST_START: {
             "function": lambda msg: start_step(BRP_REGRESSION_TEST, msg),
+        },
+    },
+    DISTRIBUTE: {
+        START: DISTRIBUTE_START,
+        DISTRIBUTE_START: {
+            "function": lambda msg: start_step(DISTRIBUTE, msg),
         },
     },
 }
