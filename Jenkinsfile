@@ -60,6 +60,17 @@ node('GOBBUILD') {
                     }
                 }
             }
+
+            stage("Deploy to TEST") {
+                tryStep "deployment", {
+                    build job: 'Subtask_Openstack_Playbook',
+                        parameters: [
+                            [$class: 'StringParameterValue', name: 'INVENTORY', value: 'test'],
+                            [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
+                            [$class: 'StringParameterValue', name: 'PLAYBOOKPARAMS', value: "-e cmdb_id=app_gob-workflow"],
+                        ]
+                }
+            }
         }
 
         if (BRANCH == "master") {
@@ -80,6 +91,7 @@ node('GOBBUILD') {
                         parameters: [
                             [$class: 'StringParameterValue', name: 'INVENTORY', value: 'acceptance'],
                             [$class: 'StringParameterValue', name: 'PLAYBOOK', value: 'deploy-gob-workflow.yml'],
+                            [$class: 'StringParameterValue', name: 'PLAYBOOKPARAMS', value: "-e cmdb_id=app_gob-workflow"],
                         ]
                 }
             }
