@@ -17,7 +17,7 @@ from gobworkflow.workflow.start import start_step, has_no_errors
 from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE,\
     RELATE_PREPARE, RELATE_PROCESS, RELATE_CHECK, RELATE_UPDATE_VIEW,\
     EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST, BRP_REGRESSION_TEST,\
-    DISTRIBUTE
+    DISTRIBUTE, KAFKA_PRODUCE
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
@@ -209,4 +209,10 @@ WORKFLOWS = {
             "function": lambda msg: start_step(DISTRIBUTE, msg),
         },
     },
+    KAFKA_PRODUCE: {
+        START: 'kafka_start',
+        'kafka_start': {
+            'function': lambda msg: start_step(KAFKA_PRODUCE, msg),
+        }
+    }
 }
