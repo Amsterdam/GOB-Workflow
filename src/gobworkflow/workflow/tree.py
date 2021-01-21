@@ -10,7 +10,7 @@ tree = WorkflowTreeNode.from_dict(WORKFLOWS[IMPORT])
 
 
 """
-from gobworkflow.workflow.config import START, DEFAULT_CONDITION
+from gobworkflow.workflow.config import START, DEFAULT_CONDITION, get_workflow
 from typing import List, Callable
 
 
@@ -50,12 +50,16 @@ class WorkflowTreeNode:
             # Step is a reference to another step
             return WorkflowTreeNode.from_dict(workflow, step)
 
-        step = workflow[step_name]
+        def _get_workflow(next):
+            # Jump to other workflow if defined in next step, otherwise stay in current workflow
+            if next.get('workflow'):
+                return get_workflow(next['workflow'])
+            return workflow
 
         return WorkflowTreeNode(
             step_name,
             step.get('function'),
-            [NextStep.from_dict(workflow, next) for next in step.get('next', [])]
+            [NextStep.from_dict(_get_workflow(next), next) for next in step.get('next', [])]
         )
 
     def to_dict(self):

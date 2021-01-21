@@ -14,6 +14,7 @@ When one or more next steps match its condition, the first one will be executed
 If no next steps are defined on can be found the workflow is ended
 """
 from gobworkflow.workflow.start import start_step, has_no_errors
+from gobcore.exceptions import GOBException
 from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE,\
     RELATE_PREPARE, RELATE_PROCESS, RELATE_CHECK, RELATE_UPDATE_VIEW,\
     EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST, BRP_REGRESSION_TEST,\
@@ -26,6 +27,7 @@ PREPARE_START = "prepare_start"
 
 # The import workflow and steps
 IMPORT = "import"
+IMPORT_OBJECT = "import_object"
 IMPORT_READ = "read"
 UPDATE_MODEL = "update_model"
 APPLY_EVENTS = "apply_events"
@@ -124,6 +126,19 @@ WORKFLOWS = {
             "function": lambda msg: start_step(APPLY, msg)
         },
     },
+    IMPORT_OBJECT: {
+        START: IMPORT_OBJECT,
+        IMPORT_OBJECT: {
+            "function": lambda msg: start_step(IMPORT_OBJECT, msg),
+            "next": [
+                {
+                    # Continue in import workflow
+                    "workflow": IMPORT,
+                    "step": UPDATE_MODEL,
+                }
+            ]
+        },
+    },
     EXPORT: {
         START: EXPORT_GENERATE,
         EXPORT_GENERATE: {
@@ -216,3 +231,9 @@ WORKFLOWS = {
         }
     }
 }
+
+
+def get_workflow(workflow: str):
+    if workflow not in WORKFLOWS:
+        raise GOBException(f"Workflow '{workflow}' is not defined")
+    return WORKFLOWS[workflow]
