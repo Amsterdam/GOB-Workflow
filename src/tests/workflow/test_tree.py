@@ -40,6 +40,28 @@ class TestWorkflowTreeNode(TestCase):
         self.assertEqual(result.function, result2.function)
         self.assertEqual(result.next, result2.next)
 
+    @patch("gobworkflow.workflow.tree.get_workflow")
+    @patch("gobworkflow.workflow.tree.NextStep")
+    def test_from_dict_jumping_workflows(self, mock_next_step, mock_get_workflow):
+        workflow = {
+            START: 'step1',
+            'step1': {
+                'function': 'the function',
+                'next': [{
+                    'workflow': 'other_workflow',
+                    'step': 'stuff'
+                }]
+            },
+        }
+
+        result = WorkflowTreeNode.from_dict(workflow)
+        self.assertEqual('step1', result.name)
+        self.assertEqual('the function', result.function)
+        self.assertEqual([mock_next_step.from_dict.return_value], result.next)
+
+        mock_next_step.from_dict.assert_called_with(mock_get_workflow.return_value, {'workflow': 'other_workflow', 'step': 'stuff'})
+        mock_get_workflow.assert_called_with('other_workflow')
+
     def test_to_dict(self):
         wf = WorkflowTreeNode('the name', 'the function', [
             type('', (), {'to_dict': lambda: 'next 1'}),

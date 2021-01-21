@@ -18,6 +18,7 @@ If not, the workflow is ended
 import copy
 
 from gobcore.logging.logger import logger
+from gobcore.message_broker import publish
 from gobcore.workflow.start_workflow import retry_workflow
 
 from gobworkflow.workflow.config import WORKFLOWS
@@ -188,6 +189,14 @@ class Workflow:
     @classmethod
     def end_of_workflow(self, msg):
         logger.configure(msg, "WORKFLOW")
+        on_complete = msg['header'].pop('on_workflow_complete', None)
+        if on_complete is not None:
+            if not isinstance(on_complete, dict) or not all([key in on_complete for key in ['exchange', 'key']]):
+                logger.error("on_workflow_complete should be a dict with keys 'exchange' and 'key'")
+            else:
+                publish(on_complete['exchange'], on_complete['key'], msg)
+                logger.info(f"Publish on_workflow_complete to {on_complete['exchange']} with {on_complete['key']}")
+
         logger.info(f"End of workflow")
         job_end(msg["header"].get("jobid"))
 
