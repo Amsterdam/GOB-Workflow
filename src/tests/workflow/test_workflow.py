@@ -317,6 +317,30 @@ class TestWorkflow(TestCase):
         job_end.assert_called()
         self.workflow._update_job_log_counts.assert_called_with(job_get(), {"data_warnings": 5})
 
+    @mock.patch("gobworkflow.workflow.workflow.logger")
+    @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
+    @mock.patch("gobworkflow.workflow.workflow.publish")
+    @mock.patch("gobworkflow.workflow.workflow.job_end")
+    @mock.patch("gobworkflow.workflow.workflow.job_get")
+    def test_handle_result_without_next_on_workflow_complete(self, job_get, job_end, mock_publish, mock_logger, mock_tree):
+        self.workflow._update_job_log_counts = mock.MagicMock()
+        self.workflow._function = mock.MagicMock()
+        msg = {"header": {'on_workflow_complete': {'key': 'the key', 'exchange': 'the exchange'}}, "condition": False, "summary": {"log_counts": {"data_warnings": 5}}}
+        handler = self.workflow.handle_result()
+        handler(msg)
+
+        self.workflow._function.assert_not_called()
+        job_end.assert_called()
+        self.workflow._update_job_log_counts.assert_called_with(job_get(), {"data_warnings": 5})
+        mock_publish.assert_called_with('the exchange', 'the key', msg)
+
+        # Test invalid dict
+        mock_publish.reset_mock()
+        msg['header']['on_workflow_complete'] = {}
+        handler(msg)
+        mock_publish.assert_not_called()
+        mock_logger.error.assert_called_once_with("on_workflow_complete should be a dict with keys 'exchange' and 'key'")
+
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_get")
