@@ -134,12 +134,13 @@ class TestStorage(TestCase):
         update_service(service, [])
         self.assertEqual(mockedSession._first.is_alive, service["is_alive"])
 
+    @mock.patch("gobworkflow.storage.storage.URL")
     @mock.patch("gobworkflow.storage.storage.migrate_storage")
     @mock.patch("gobworkflow.storage.storage.create_engine")
-    def test_connect(self, mock_create, mock_migrate):
+    def test_connect(self, mock_create, mock_migrate, mock_url):
         result = connect()
 
-        mock_create.assert_called()
+        mock_create.assert_called_with(mock_url.return_value, connect_args={'sslmode': 'require'})
         mock_migrate.assert_called()
         self.assertEqual(result, True)
         self.assertEqual(is_connected(), True)

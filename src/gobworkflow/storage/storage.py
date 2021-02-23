@@ -40,7 +40,7 @@ def connect(force_migrate=False):
     global session, engine
 
     try:
-        engine = create_engine(URL(**GOB_MGMT_DB))
+        engine = create_engine(URL(**GOB_MGMT_DB), connect_args={'sslmode': 'require'})
 
         migrate_storage(force_migrate)
 
