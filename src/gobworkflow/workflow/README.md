@@ -57,7 +57,7 @@ For example:
             'type': 'workflow',
             'workflow': IMPORT,
             'header': {
-                'catalogue': 'gebieden',
+                'catalog': 'gebieden',
                 'collection': 'stadsdelen',
                 'application': 'DGDialog',
             }
@@ -66,7 +66,7 @@ For example:
             'type': 'workflow',
             'workflow': RELATE,
             'header': {
-                'catalogue': 'gebieden',
+                'catalog': 'gebieden',
                 'collection': 'stadsdelen',
                 'attribute': 'ligt_in_gemeente',
             }
@@ -90,7 +90,7 @@ For completeness, this is how we would create a dynamic workflow by sending a me
                         'type': 'workflow',
                         'workflow': IMPORT,
                         'header': {
-                            'catalogue': 'gebieden',
+                            'catalog': 'gebieden',
                             'collection': 'stadsdelen',
                             'application': 'DGDialog',
                         }
@@ -99,7 +99,7 @@ For completeness, this is how we would create a dynamic workflow by sending a me
                         'type': 'workflow',
                         'workflow': RELATE,
                         'header': {
-                            'catalogue': 'gebieden',
+                            'catalog': 'gebieden',
                             'collection': 'stadsdelen',
                             'attribute': 'ligt_in_gemeente',
                         }

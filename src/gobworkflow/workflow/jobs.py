@@ -42,7 +42,7 @@ def job_start(job_type, msg):
         "end": None,
         "status": STATUS_START,
         "user": msg.get("header", {}).get("user"),
-        "catalogue": msg.get('header', {}).get('catalogue'),
+        "catalog": msg.get('header', {}).get('catalog'),
         "collection": msg.get('header', {}).get('collection'),
         "attribute": msg.get('header', {}).get('attribute'),
         "application": msg.get('header', {}).get('application'),

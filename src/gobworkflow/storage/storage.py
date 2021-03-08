@@ -160,8 +160,8 @@ def save_log(msg):
         source=msg.get('source', None),
         application=msg.get('application', None),
         destination=msg.get('destination', None),
-        catalogue=msg.get('catalogue', None),
-        entity=msg.get('entity', None),
+        catalog=msg.get('catalog', None),
+        collection=msg.get('collection', None),
         level=msg.get('level', None),
         name=msg.get('name', None),
         msgid=msg.get('id', None),
@@ -349,7 +349,7 @@ def job_runs(jobinfo, msg):
     header = msg.get('header')
 
     # Check job duplicates source/cat/col/attr, destination is used in export to export to different locations
-    check_args = ['source', 'catalogue', 'collection', 'attribute', 'destination']
+    check_args = ['source', 'catalog', 'collection', 'attribute', 'destination']
     job_args = [header.get(key) for key in check_args if header.get(key)]
 
     # Filter jobs on type and catalog / collection / attribute if available

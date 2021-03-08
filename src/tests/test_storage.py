@@ -486,7 +486,7 @@ class TestJobRuns(TestCase):
         mock_session.query.return_value = session
 
         job_info = {'id': 'any id', 'name': 'any name', 'args': ['cat', 'col'], 'type': 'import'}
-        msg = {'header': {'catalogue': 'cat', 'collection': 'col'}}
+        msg = {'header': {'catalog': 'cat', 'collection': 'col'}}
 
         session._first = None
         result = job_runs(job_info, msg)
@@ -523,7 +523,7 @@ class TestJobRuns(TestCase):
         mock_job.start = mock.MagicMock()
 
         # Check if all variables are used in the query
-        msg = {'header': {'catalogue': 'cat', 'collection': 'col', 'attribute': 'attr', 'destination': 'dest', 'extra': 'not used'}}
+        msg = {'header': {'catalog': 'cat', 'collection': 'col', 'attribute': 'attr', 'destination': 'dest', 'extra': 'not used'}}
 
         class Job:
             def __init__(self, start):

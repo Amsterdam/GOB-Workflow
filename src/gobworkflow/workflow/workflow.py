@@ -68,7 +68,7 @@ class Workflow:
                 'type': 'workflow',
                 'workflow': IMPORT,
                 'header': {
-                    'catalogue': 'gebieden',
+                    'catalog': 'gebieden',
                     'collection': 'stadsdelen',
                     'application': 'DGDialog',
                 }
@@ -77,7 +77,7 @@ class Workflow:
                 'type': 'workflow',
                 'workflow': RELATE,
                 'header': {
-                    'catalogue': 'gebieden',
+                    'catalog': 'gebieden',
                     'collection': 'stadsdelen',
                     'attribute': 'ligt_in_wijk'
                 }
