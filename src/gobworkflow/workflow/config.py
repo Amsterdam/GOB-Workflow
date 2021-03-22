@@ -15,7 +15,7 @@ If no next steps are defined on can be found the workflow is ended
 """
 from gobworkflow.workflow.start import start_step, has_no_errors
 from gobcore.exceptions import GOBException
-from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE,\
+from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE, BAG_EXTRACT, \
     RELATE_PREPARE, RELATE_PROCESS, RELATE_CHECK, RELATE_UPDATE_VIEW,\
     EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST, BRP_REGRESSION_TEST,\
     DISTRIBUTE, KAFKA_PRODUCE
@@ -24,6 +24,9 @@ START = "start"  # workflow[START] is the name of the first step in a workflow
 
 # The prepare workflow and steps
 PREPARE_START = "prepare_start"
+
+# The bag extract workflow
+BAG_EXTRACT_START = "bag_extract_start"
 
 # The import workflow and steps
 IMPORT = "import"
@@ -74,6 +77,12 @@ WORKFLOWS = {
         START: PREPARE_START,
         PREPARE_START: {
             "function": lambda msg: start_step(PREPARE, msg),
+        }
+    },
+    BAG_EXTRACT: {
+        START: BAG_EXTRACT_START,
+        BAG_EXTRACT_START: {
+            "function": lambda msg: start_step(BAG_EXTRACT, msg),
         }
     },
     IMPORT: {
