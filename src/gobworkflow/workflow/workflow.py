@@ -197,7 +197,7 @@ class Workflow:
                 publish(on_complete['exchange'], on_complete['key'], msg)
                 logger.info(f"Publish on_workflow_complete to {on_complete['exchange']} with {on_complete['key']}")
 
-        logger.info(f"End of workflow")
+        logger.info("End of workflow")
         job_end(msg["header"].get("jobid"))
 
     def _update_job_log_counts(self, job, log_counts):
