@@ -14,5 +14,6 @@ exclude=.git,
         tests,
         scripts,
         */settings_commons.py
+        src/gobcore/*
 max-complexity=6
 max-line-length = 119
