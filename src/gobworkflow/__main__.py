@@ -90,7 +90,7 @@ def on_workflow_progress(msg):
         logger.info(f"Duration {str(step_info.end - step_info.start).split('.')[0]}")
         if status == STATUS_FAIL:
             logger.error(f"Program error: {msg['info_msg']}")
-            logger.info(f"End of workflow")
+            logger.info("End of workflow")
     hooks.on_workflow_progress(msg)
 
 
