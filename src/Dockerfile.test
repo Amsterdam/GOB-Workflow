@@ -22,7 +22,7 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 
 # Install required Python packages
 COPY requirements.txt /app/
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN LIBGDAL_VERSION=$(gdal-config --version) pip3 install --no-cache-dir -r requirements.txt
 RUN rm requirements.txt
 
 # Copy gobworkflow module
