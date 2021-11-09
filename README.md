@@ -3,7 +3,7 @@
 GOB Workflow is the central component within GOB.
 
 GOB Workflow subscribes to all relevant queues
-and is responsable for routing received messages according to the defined workflows:
+and is responsible for routing received messages according to the defined workflows:
 - subscribe to log messages and store the messages in the management database
 - subscribe to workflow messages, inspect the message and route it further
 
@@ -23,7 +23,7 @@ is required to run this component.
 
 ```bash
 docker-compose build
-docker-compose up &
+docker-compose up -d
 ```
 
 ### Workflow commands
