@@ -1,7 +1,7 @@
 import os
 
 GOB_MGMT_DB = {
-    'drivername': 'postgres',
+    'drivername': 'postgresql',
     'username': os.getenv("DATABASE_USER", "gob"),
     'password': os.getenv("DATABASE_PASSWORD", "insecure"),
     'host': os.getenv("DATABASE_HOST_OVERRIDE", "localhost"),
