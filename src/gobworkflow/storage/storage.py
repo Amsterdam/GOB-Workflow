@@ -379,7 +379,12 @@ def job_runs(jobinfo, msg) -> bool:
         .order_by(Job.start.desc())
         .first()
     )
-    if has_job_run := job is not None:
+      if job is None:
+          return False
+        
+      print(f"Found already running job '{job.id}', started {job.start} (zombie: {job.is_zombie()})")
+      return not job.is_zombie()
+          
         has_job_run = not job.is_zombie()  # Don't consider jobs older than 12 hours
         print(f"Found already running job '{job.id}', started {job.start} (zombie: {job.is_zombie()})")
 
