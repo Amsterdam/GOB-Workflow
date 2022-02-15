@@ -375,9 +375,9 @@ def job_runs(jobinfo, msg) -> bool:
         .filter(Job.type == jobinfo['type'])
         .filter_by(**{arg: header.get(arg) for arg in check_args})
         .filter(cast(Job.args, ARRAY(String)).contains(cast(job_args, ARRAY(String))))
-        .filter(Job.end == None)
+        .filter(Job.end == None)  # noqa E711 (== None)
         .order_by(Job.start.desc())
-        .first()  # noqa E711 (== None)
+        .first()
     )
     if has_job_run := job is not None:
         has_job_run = not job.is_zombie()  # Don't consider jobs older than 12 hours
