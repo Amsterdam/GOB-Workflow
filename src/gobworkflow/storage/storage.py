@@ -347,7 +347,7 @@ def job_get(job_id):
 
 
 @session_auto_reconnect
-def job_runs(jobinfo, msg) -> bool:
+def job_runs(jobinfo: Job, msg: dict) -> bool:
     """
     Checks for job duplicate based on header information, if all equal:
      - Model:
@@ -363,6 +363,10 @@ def job_runs(jobinfo, msg) -> bool:
          - less than 12 hours
 
     Otherwise a job is not a duplicate and should be started.
+
+    :param jobinfo: current Job
+    :param msg: Dict containing parameters to the workflow
+    :return: True if a running job is found, else False
     """
     header = msg.get('header')
     check_args = ['catalogue', 'collection', 'attribute', 'application']
@@ -379,16 +383,11 @@ def job_runs(jobinfo, msg) -> bool:
         .order_by(Job.start.desc())
         .first()
     )
-      if job is None:
-          return False
-        
-      print(f"Found already running job '{job.id}', started {job.start} (zombie: {job.is_zombie()})")
-      return not job.is_zombie()
-          
-        has_job_run = not job.is_zombie()  # Don't consider jobs older than 12 hours
-        print(f"Found already running job '{job.id}', started {job.start} (zombie: {job.is_zombie()})")
+    if job is None:
+        return False
 
-    return has_job_run
+    print(f"Found already running job '{job.id}', started {job.start} (zombie: {job.is_zombie()})")
+    return not job.is_zombie()
 
 
 @session_auto_reconnect
