@@ -1,18 +1,14 @@
+import datetime
 from unittest import TestCase, mock
 
-import datetime
-from sqlalchemy.exc import DBAPIError
-from sqlalchemy.exc import IntegrityError
-
-from gobcore.model.sa.management import Job, JobStep, Task
-
 import gobworkflow.storage
-
+from gobcore.model.sa.management import Job, JobStep, Task
 from gobworkflow.storage.storage import connect, migrate_storage, disconnect, is_connected
+from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs, job_get
 from gobworkflow.storage.storage import save_log, get_services, remove_service, mark_service_dead, update_service, \
     _update_servicetasks, save_audit_log
-from gobworkflow.storage.storage import job_save, job_update, step_save, step_update, get_job_step, job_runs, job_get
 from gobworkflow.storage.storage import task_get, task_save, task_update, task_lock, task_unlock, get_tasks_for_stepid
+
 
 class MockedService:
 
@@ -23,6 +19,7 @@ class MockedService:
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
 
 class MockedSession:
 
@@ -81,6 +78,7 @@ class MockedSession:
         self.update_args = args
         return 1
 
+
 class MockedEngine:
 
     def dispose(self):
@@ -98,11 +96,14 @@ class MockedEngine:
     def __exit__(self, *args):
         pass
 
+
 class MockException(Exception):
     pass
 
+
 def raise_exception(e):
     raise e("Raised")
+
 
 class TestStorage(TestCase):
 
@@ -140,7 +141,7 @@ class TestStorage(TestCase):
     def test_connect(self, mock_create, mock_migrate, mock_url):
         result = connect()
 
-        mock_create.assert_called_with(mock_url.return_value, connect_args={'sslmode': 'require'})
+        mock_create.assert_called_with(mock_url.create.return_value, connect_args={'sslmode': 'require'})
         mock_migrate.assert_called()
         self.assertEqual(result, True)
         self.assertEqual(is_connected(), True)
@@ -493,14 +494,17 @@ class TestJobRuns(TestCase):
         result = job_runs(job_info, msg)
         self.assertEqual(result, False)
 
-        class Job:
+        class MockJob:
             def __init__(self, start):
                 self.start = start
                 self.id = 'any id'
                 self.args = ['cat', 'col']
                 self.type = 'import'
 
-        job = Job( datetime.datetime.now())
+            def is_zombie(self):
+                return (datetime.datetime.now() - self.start).total_seconds() >= (12 * 60 * 60)
+
+        job = MockJob(datetime.datetime.now())
         session._first = job
         result = job_runs(job_info, msg)
         self.assertEqual(result, True)
@@ -524,22 +528,35 @@ class TestJobRuns(TestCase):
         mock_job.start = mock.MagicMock()
 
         # Check if all variables are used in the query
-        msg = {'header': {'catalogue': 'cat', 'collection': 'col', 'attribute': 'attr', 'destination': 'dest', 'extra': 'not used'}}
+        msg = {
+            'header': {
+                'catalogue': 'cat',
+                'collection': 'col',
+                'attribute': 'attr',
+                'destination': 'dest',
+                'extra': 'not used'
+            }
+        }
 
-        class Job:
+        class MockJob:
             def __init__(self, start):
                 self.start = start
                 self.id = '1234'
 
-        result_job = Job( datetime.datetime.now())
+            def is_zombie(self):
+                return (datetime.datetime.now() - self.start).total_seconds() >= (12 * 60 * 60)
 
-        mock_session.query.return_value \
-                    .filter.return_value \
-                    .filter.return_value \
-                    .filter.return_value \
-                    .filter.return_value \
-                    .order_by.return_value \
-                    .first.return_value = result_job
+        result_job = MockJob(datetime.datetime.now())
+
+        mock_session \
+            .query.return_value \
+            .filter.return_value \
+            .filter.return_value \
+            .filter_by.return_value \
+            .filter.return_value \
+            .filter.return_value \
+            .order_by.return_value \
+            .first.return_value = result_job
 
         job_info = {'id': 'any id', 'name': 'any name', 'args': ['cat', 'col'], 'type': 'import'}
 
@@ -554,8 +571,12 @@ class TestJobRuns(TestCase):
         mock_filter_id.filter.assert_called_with(mock_job.type == job_info['type'])
         mock_filter_type = mock_filter_id.filter.return_value
 
-        mock_filter_type.filter.assert_called_with(mock_cast.return_value.contains.return_value)
-        mock_filter_args = mock_filter_type.filter.return_value
+        kwargs = {key: msg['header'].get(key) for key in ['catalogue', 'collection', 'attribute', 'application']}
+        mock_filter_type.filter_by.assert_called_with(**kwargs)
+        mock_filter_collection = mock_filter_type.filter_by.return_value
+
+        mock_filter_collection.filter.assert_called_with(mock_cast.return_value.contains.return_value)
+        mock_filter_args = mock_filter_collection.filter.return_value
 
         mock_filter_args.filter.assert_called_with(mock_job.end == None)
         mock_filter_end = mock_filter_args.filter.return_value
@@ -566,5 +587,5 @@ class TestJobRuns(TestCase):
         mock_filter_order.first.assert_called()
         mock_filter_order.first.result_value = result_job
 
-        # Assert all job args are called
-        mock_cast.assert_called_with(['cat', 'col', 'attr', 'dest'], mock_array.return_value)
+        # Assert all job args are called, in this case only destination
+        mock_cast.assert_called_with(['dest'], mock_array.return_value)

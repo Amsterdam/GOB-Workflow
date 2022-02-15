@@ -4,6 +4,7 @@ This module encapsulates the GOB Management storage.
 """
 import datetime
 import json
+from typing import Optional
 
 from alembic.runtime import migration
 import alembic.config
@@ -11,6 +12,7 @@ import alembic.script
 
 from sqlalchemy import create_engine, or_, and_, String
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.engine.url import URL
@@ -24,8 +26,8 @@ from gobcore.model.sa.management import Base, Job, JobStep, Log, Service, Servic
 from gobworkflow.config import GOB_MGMT_DB
 from gobworkflow.storage.auto_reconnect_wrapper import auto_reconnect_wrapper
 
-session = None
-engine = None
+session: Optional[Session] = None
+engine: Optional[Engine] = None
 
 
 def connect(force_migrate=False):
@@ -40,7 +42,7 @@ def connect(force_migrate=False):
     global session, engine
 
     try:
-        engine = create_engine(URL(**GOB_MGMT_DB), connect_args={'sslmode': 'require'})
+        engine = create_engine(URL.create(**GOB_MGMT_DB), connect_args={'sslmode': 'require'})
 
         migrate_storage(force_migrate)
 
@@ -345,31 +347,47 @@ def job_get(job_id):
 
 
 @session_auto_reconnect
-def job_runs(jobinfo, msg):
+def job_runs(jobinfo: Job, msg: dict) -> bool:
+    """
+    Checks for job duplicate based on header information, if all equal:
+     - Model:
+         - catalogue
+         - collection
+         - attribute
+         - application
+     - Extra arguments:
+         - destination
+         - source
+         - entity_id
+     - Job age:
+         - less than 12 hours
+
+    Otherwise a job is not a duplicate and should be started.
+
+    :param jobinfo: current Job
+    :param msg: Dict containing parameters to the workflow
+    :return: True if a running job is found, else False
+    """
     header = msg.get('header')
+    check_args = ['catalogue', 'collection', 'attribute', 'application']
+    job_args = [header.get(key) for key in ['destination', 'entity_id', 'source'] if header.get(key)]
 
-    # Check job duplicates source/cat/col/attr,
-    # destination is used in export to export to different locations
-    # application is used in import
-    check_args = ['source', 'catalogue', 'collection', 'attribute', 'destination', 'entity_id', 'application']
-    job_args = [header.get(key) for key in check_args if header.get(key)]
-
-    # Filter jobs on type and catalog / collection / attribute if available
-    job = session.query(Job)\
-        .filter(Job.id != jobinfo['id'])\
-        .filter(Job.type == jobinfo['type'])\
-        .filter(cast(Job.args, ARRAY(String)).contains(cast(job_args, ARRAY(String))))\
-        .filter(Job.end == None)\
-        .order_by(Job.start.desc())\
-        .first()  # noqa E711 (== None)
+    job = (
+        session
+        .query(Job)
+        .filter(Job.id != jobinfo['id'])
+        .filter(Job.type == jobinfo['type'])
+        .filter_by(**{arg: header.get(arg) for arg in check_args})
+        .filter(cast(Job.args, ARRAY(String)).contains(cast(job_args, ARRAY(String))))
+        .filter(Job.end == None)  # noqa E711 (== None)
+        .order_by(Job.start.desc())
+        .first()
+    )
     if job is None:
         return False
-    else:
-        # Consider jobs of less than 12 hours old as still running
-        duration = datetime.datetime.now() - job.start
-        zombie = duration.total_seconds() >= (12 * 60 * 60)
-        print("Found already running job", job.id, job.start, duration, zombie)
-        return not zombie
+
+    print(f"Found already running job '{job.id}', started {job.start} (zombie: {job.is_zombie()})")
+    return not job.is_zombie()
 
 
 @session_auto_reconnect
