@@ -25,12 +25,22 @@ RUN rm -rf /opt/wheelhouse
 # Copy gobworkflow module.
 COPY gobworkflow gobworkflow
 
-# Copy .jenkins scripts to where jenkins / ansible expect them
-COPY .jenkins /.jenkins
-
 # Copy alembic config
 COPY alembic alembic
 COPY alembic.ini alembic.ini
 
 # Set GOBOPTIONS=--migrate to run migrations and then exit
 CMD python3 -m gobworkflow $GOBOPTIONS
+
+
+# Test.
+FROM application as test
+
+# Copy .jenkins scripts to where jenkins / ansible expect them
+COPY .jenkins /.jenkins
+
+# Copy test module
+COPY tests tests
+
+# Copy tests
+COPY test.sh .flake8 ./
