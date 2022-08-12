@@ -16,35 +16,35 @@ is required to run this component.
 
 ## Requirements
 
-* docker-compose >= 1.17
-* docker ce >= 18.03
+* docker compose >= 1.25
+* Docker CE >= 18.09
 
 ## Run
 
 ```bash
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 ```
 
 ### Workflow commands
 
 ```bash
-docker exec gobworkflow python -m gobworkflow.start -h
+docker compose run --rm gobworkflow python -m gobworkflow.start -h
 ```
 
 ## Tests
 
 ```bash
-docker-compose -f src/.jenkins/test/docker-compose.yml build
-docker-compose -f src/.jenkins/test/docker-compose.yml run test
+docker compose -f src/.jenkins/test/docker-compose.yml build
+docker compose -f src/.jenkins/test/docker-compose.yml run test
 ```
 
 # Local
 
 ## Requirements
 
-* python >= 3.6
-    
+* Python >= 3.6
+
 ## Initialisation
 
 Create a virtual environment:
@@ -54,13 +54,13 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r src/requirements.txt
 ```
-    
-Or activate the previously created virtual environment
+
+Or activate the previously created virtual environment:
 
 ```bash
 source venv/bin/activate
 ```
-    
+
 ## Run
 
 Start the service:
