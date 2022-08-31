@@ -27,7 +27,7 @@ node('GOBBUILD') {
         stage('Test') {
             tryStep "test", {
                 sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml build --no-cache && " +
-                   "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml run -u root --rm test"
+                   "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml run --rm test"
 
             }, {
                 sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml down"
