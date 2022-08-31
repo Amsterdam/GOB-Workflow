@@ -36,14 +36,14 @@ docker compose run --rm gobworkflow python -m gobworkflow.start -h
 
 ```bash
 docker compose -f src/.jenkins/test/docker-compose.yml build
-docker compose -f src/.jenkins/test/docker-compose.yml run test
+docker compose -f src/.jenkins/test/docker-compose.yml run --rm test
 ```
 
 # Local
 
 ## Requirements
 
-* Python >= 3.6
+* Python >= 3.9
 
 ## Initialisation
 
