@@ -33,6 +33,16 @@ USER datapunt
 # Set GOBOPTIONS=--migrate to run migrations and then exit
 CMD python3 -m gobworkflow $GOBOPTIONS
 
+# Development.
+FROM application as development
+USER root
+# Install GOB-Core in development mode. Will be overridden with
+# mounts from the developer filesystem. Changes made to GOB-Core
+# will be available immediately.
+RUN rm -rf GOB-Core && git clone --depth=1 --branch master https://github.com/Amsterdam/GOB-Core.git
+RUN LIBGDAL_VERSION=$(gdal-config --version) pip install -e /app/GOB-Core
+
+USER datapunt
 
 # Test.
 FROM application as test

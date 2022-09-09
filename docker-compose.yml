@@ -2,7 +2,10 @@ version: '3.7'
 
 services:
   gobworkflow:
-    build: src
+    build:
+      context: src
+      target: development
+    image: gob_workflow
     container_name: gobworkflow
     environment:
       MESSAGE_BROKER_ADDRESS: rabbitmq
@@ -13,6 +16,10 @@ services:
       GOBOPTIONS: ${GOBOPTIONS}
     volumes:
       - gob-volume:/app/shared
+      - ./src/gobworkflow:/app/gobworkflow
+      - ./src/tests:/app/tests
+      - ./src/alembic:/app/alembic
+      - ${GOB_CORE_DIR-../GOB-Core}:/app/GOB-Core
 
 volumes:
   gob-volume:
