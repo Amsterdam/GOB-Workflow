@@ -28,6 +28,7 @@ from gobworkflow.storage.storage import job_runs, job_get, job_update
 from gobworkflow.workflow.start import END_OF_WORKFLOW, start_step
 
 from gobworkflow.workflow.tree import WorkflowTreeNode
+from gobworkflow.config import LOG_HANDLERS, LOG_NAME
 
 
 class Workflow:
@@ -166,8 +167,8 @@ class Workflow:
 
         # No retries left of retry_workflow has failed
         action = self._workflow_name.upper()
-        logger.configure(msg, action)
-        logger.error(f"Job {action} start rejected, job is already active")
+        with logger.configure_context(msg, action, LOG_HANDLERS):
+            logger.error(f"Job {action} start rejected, job is already active")
 
     def reject(self, msg, job):
         """
@@ -187,18 +188,18 @@ class Workflow:
         return job_end(job['id'], STATUS_REJECTED)
 
     @classmethod
-    def end_of_workflow(self, msg):
-        logger.configure(msg, "WORKFLOW")
-        on_complete = msg['header'].pop('on_workflow_complete', None)
-        if on_complete is not None:
-            if not isinstance(on_complete, dict) or not all([key in on_complete for key in ['exchange', 'key']]):
-                logger.error("on_workflow_complete should be a dict with keys 'exchange' and 'key'")
-            else:
-                publish(on_complete['exchange'], on_complete['key'], msg)
-                logger.info(f"Publish on_workflow_complete to {on_complete['exchange']} with {on_complete['key']}")
+    def end_of_workflow(cls, msg):
+        with logger.configure_context(msg, LOG_NAME, LOG_HANDLERS):
+            on_complete = msg['header'].pop('on_workflow_complete', None)
+            if on_complete is not None:
+                if not isinstance(on_complete, dict) or not all([key in on_complete for key in ['exchange', 'key']]):
+                    logger.error("on_workflow_complete should be a dict with keys 'exchange' and 'key'")
+                else:
+                    publish(on_complete['exchange'], on_complete['key'], msg)
+                    logger.info(f"Publish on_workflow_complete to {on_complete['exchange']} with {on_complete['key']}")
 
-        logger.info("End of workflow")
-        job_end(msg["header"].get("jobid"))
+            logger.info("End of workflow")
+            job_end(msg["header"].get("jobid"))
 
     def _update_job_log_counts(self, job, log_counts):
         current_counts = job.log_counts or {}

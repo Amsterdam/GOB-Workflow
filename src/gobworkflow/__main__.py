@@ -24,6 +24,7 @@ from gobworkflow.storage.storage import get_job_step
 from gobworkflow.task.queue import TaskQueue
 
 from gobworkflow.workflow import hooks
+from gobworkflow.config import LOG_HANDLERS, LOG_NAME
 
 
 def handle_result(msg):
@@ -86,11 +87,11 @@ def on_workflow_progress(msg):
     status = msg['status']
     step_info = step_status(msg['jobid'], msg['stepid'], status)
     if step_info and status in [STATUS_OK, STATUS_FAIL]:
-        logger.configure(msg, "WORKFLOW")
-        logger.info(f"Duration {str(step_info.end - step_info.start).split('.')[0]}")
-        if status == STATUS_FAIL:
-            logger.error(f"Program error: {msg['info_msg']}")
-            logger.info("End of workflow")
+        with logger.configure_context(msg, LOG_NAME, LOG_HANDLERS):
+            logger.info(f"Duration {str(step_info.end - step_info.start).split('.')[0]}")
+            if status == STATUS_FAIL:
+                logger.error(f"Program error: {msg['info_msg']}")
+                logger.info("End of workflow")
     hooks.on_workflow_progress(msg)
 
 

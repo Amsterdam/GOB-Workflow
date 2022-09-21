@@ -1,5 +1,10 @@
 import os
 
+from gobcore.logging.logger import StdoutHandler, RequestsHandler
+
+LOG_NAME = "WORKFLOW"
+LOG_HANDLERS = [RequestsHandler(), StdoutHandler()]
+
 GOB_MGMT_DB = {
     'drivername': 'postgresql',
     'username': os.getenv("DATABASE_USER", "gob"),
