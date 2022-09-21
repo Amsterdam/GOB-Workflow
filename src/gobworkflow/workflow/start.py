@@ -8,6 +8,7 @@ A has_no_errors method is available to be used as a default condition to start a
 from gobcore.logging.logger import logger
 from gobcore.message_broker.config import WORKFLOW_EXCHANGE
 from gobcore.message_broker import publish
+from gobworkflow.config import LOG_HANDLERS, LOG_NAME
 
 # Special return value that a function can return to end the current workflow
 END_OF_WORKFLOW = "END_OF_WORKFLOW"
@@ -51,6 +52,6 @@ def has_no_errors(msg):
         num_errors = len(summary.get('errors', []))
         is_ok = num_errors == 0
         if not is_ok:
-            logger.configure(msg, "WORKFLOW")
-            logger.warning(f"Workflow stopped because of {num_errors} error{'s' if num_errors > 1 else '' }")
+            with logger.configure_context(msg, LOG_NAME, LOG_HANDLERS):
+                logger.warning(f"Workflow stopped because of {num_errors} error{'s' if num_errors > 1 else '' }")
     return is_ok
