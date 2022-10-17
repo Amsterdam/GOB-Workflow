@@ -13,6 +13,8 @@ If the status has changed the change is written to the storage
 """
 import datetime
 
+from sqlalchemy.orm.exc import ObjectDeletedError
+
 from gobcore.status.heartbeat import HEARTBEAT_INTERVAL
 from gobworkflow.storage.storage import update_service, remove_service, get_services, mark_service_dead
 
@@ -65,12 +67,16 @@ def check_services():
     """
     now = datetime.datetime.utcnow()
     for service in get_services():
-        # Only check services that are currently marked as alive
-        last_heartbeat = service.timestamp
-        time_ago = now - last_heartbeat
-        if time_ago.total_seconds() > _SERVICE_REMOVAL_TIMEOUT:
-            # Final timeout reached, remove the service
-            remove_service(service)
-        elif time_ago.total_seconds() > (HEARTBEAT_INTERVAL * 2):
-            # Heartbeat timeout, register as dead
-            mark_service_dead(service)
+        try:
+            # Only check services that are currently marked as alive
+            last_heartbeat = service.timestamp
+        except ObjectDeletedError as err:
+            print("Service expired: ", str(err))
+        else:
+            time_ago = now - last_heartbeat
+            if time_ago.total_seconds() > _SERVICE_REMOVAL_TIMEOUT:
+                # Final timeout reached, remove the service
+                remove_service(service)
+            elif time_ago.total_seconds() > (HEARTBEAT_INTERVAL * 2):
+                # Heartbeat timeout, register as dead
+                mark_service_dead(service)

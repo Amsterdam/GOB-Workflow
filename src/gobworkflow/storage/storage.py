@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, or_, and_, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import DBAPIError, IntegrityError
-from sqlalchemy.orm.exc import ObjectDeletedError
+from sqlalchemy.orm.exc import ObjectDeletedError, DetachedInstanceError
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import cast
@@ -237,7 +237,7 @@ def remove_service(service):
     except ObjectDeletedError:
         # This method can be called for the same service by multiple workflow instances
         # A conflict can occur and can safely be ignored
-        print(f"Ignore conflicting service deletion for service {service.name}")
+        print(f"Ignore conflicting service deletion for service")
 
 
 @session_auto_reconnect
@@ -301,10 +301,10 @@ def _update_servicetasks(service, tasks):
         session.query(ServiceTask).filter(ServiceTask.service_id == None).delete()  # noqa: E711
         session.commit()
 
-    except ObjectDeletedError:
+    except (ObjectDeletedError, DetachedInstanceError):
         # This method can be called for the same service by multiple workflow instances
         # A conflict can occur and can safely be ignored
-        print(f"Ignore conflicting task deletions for service {service.name}")
+        print(f"Ignore conflicting task deletions for service")
 
 
 def _mark_active_tasks(current_tasks, service, tasks):
