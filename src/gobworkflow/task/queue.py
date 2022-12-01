@@ -70,7 +70,7 @@ class TaskQueue:
         :param tasks:
         :return:
         """
-        ids = [task['id'] for task in tasks if 'id' in task]
+        ids = [task['task_name'] for task in tasks if 'task_name' in task]
         assert len(set(ids)) == len(tasks), "All tasks should have a unique id"
 
         done = []
@@ -80,9 +80,10 @@ class TaskQueue:
 
             for dependency in task['dependencies']:
                 if dependency not in done:
-                    raise GOBException(f"Task {task['id']} depends on task {dependency}, but isn't executed yet")
+                    raise GOBException(f"Task {task['task_name']} depends on task {dependency}, "
+                                       f"but isn't executed yet")
 
-            done.append(task['id'])
+            done.append(task['task_name'])
 
     def _create_tasks(self, jobid, stepid, process_id, tasks, key_prefix, extra_msg, extra_header):
         """Create Task objects for the input list 'tasks'.
@@ -99,7 +100,7 @@ class TaskQueue:
 
         for task in tasks:
             task_def = {
-                'name': task['id'],
+                'name': task['task_name'],
                 'dependencies': task['dependencies'],
                 'status': self.STATUS_NEW,
                 'jobid': jobid,
@@ -143,11 +144,11 @@ class TaskQueue:
         msg = {
             **task.extra_msg,
             'taskid': task.id,
-            'id': task.name,
             'header': {
                 'jobid': task.jobid,
                 'stepid': task.stepid,
                 'process_id': task.process_id,
+                'task_name': task.name,
                 **task.extra_header,
             }
         }
