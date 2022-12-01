@@ -70,8 +70,8 @@ class TaskQueue:
         :param tasks:
         :return:
         """
-        ids = [task['task_name'] for task in tasks if 'task_name' in task]
-        assert len(set(ids)) == len(tasks), "All tasks should have a unique id"
+        task_names = [task['task_name'] for task in tasks if 'task_name' in task]
+        assert len(set(task_names)) == len(tasks), "All tasks should have a unique name"
 
         done = []
 
