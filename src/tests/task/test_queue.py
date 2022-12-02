@@ -17,9 +17,9 @@ class TestTaskQueue(TestCase):
 
     def setUp(self) -> None:
         self.tasks = [
-            {'id': 'task id 1', 'dependencies': []},
-            {'id': 'task id 2', 'dependencies': ['task id 1']},
-            {'id': 'task id 3', 'dependencies': ['task id 1', 'task id 2']},
+            {'task_name': 'task id 1', 'dependencies': []},
+            {'task_name': 'task id 2', 'dependencies': ['task id 1']},
+            {'task_name': 'task id 3', 'dependencies': ['task id 1', 'task id 2']},
         ]
         self.start_message = {
             'header': {
@@ -85,12 +85,12 @@ class TestTaskQueue(TestCase):
         self.task_queue._validate_dependencies(self.tasks)
 
     def test_validate_dependencies_double_id(self):
-        self.tasks[2]['id'] = self.tasks[1]['id']
+        self.tasks[2]['task_name'] = self.tasks[1]['task_name']
         with self.assertRaises(AssertionError):
             self.task_queue._validate_dependencies(self.tasks)
 
     def test_validate_dependencies_circular_dependency(self):
-        self.tasks[0]['dependencies'] = [self.tasks[1]['id']]
+        self.tasks[0]['dependencies'] = [self.tasks[1]['task_name']]
 
         with self.assertRaises(GOBException):
             self.task_queue._validate_dependencies(self.tasks)
@@ -110,7 +110,7 @@ class TestTaskQueue(TestCase):
 
         mock_task_save.assert_has_calls([
             call({
-                'name': self.tasks[0]['id'],
+                'name': self.tasks[0]['task_name'],
                 'dependencies': self.tasks[0]['dependencies'],
                 'status': self.task_queue.STATUS_NEW,
                 'jobid': self.jobid,
@@ -124,7 +124,7 @@ class TestTaskQueue(TestCase):
                 'process_id': self.process_id,
             }),
             call({
-                'name': self.tasks[1]['id'],
+                'name': self.tasks[1]['task_name'],
                 'dependencies': self.tasks[1]['dependencies'],
                 'status': self.task_queue.STATUS_NEW,
                 'jobid': self.jobid,
@@ -192,10 +192,10 @@ class TestTaskQueue(TestCase):
         mock_publish.assert_called_with(WORKFLOW_EXCHANGE, task.key_prefix + ".task.request", {
             'extra': 'msg',
             'taskid': task.id,
-            'id': task.name,
             'header': {
                 'jobid': task.jobid,
                 'stepid': task.stepid,
+                'task_name': task.name,
                 'process_id': task.process_id,
                 'extra': 'header',
             }
