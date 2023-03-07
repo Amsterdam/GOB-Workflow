@@ -25,12 +25,14 @@ node('GOBBUILD') {
         }
 
         stage('Test') {
-            tryStep "test", {
-                sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml build --no-cache && " +
-                   "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml run --rm test"
+            lock("gob-workflow-test") {
+                tryStep "test", {
+                    sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml build --no-cache && " +
+                       "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml run --rm test"
 
-            }, {
-                sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml down"
+                }, {
+                    sh "docker-compose -p gob_workflow -f src/.jenkins/test/docker-compose.yml down"
+                }
             }
         }
 
