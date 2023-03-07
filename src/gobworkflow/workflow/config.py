@@ -18,7 +18,7 @@ from gobcore.exceptions import GOBException
 from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE, BAG_EXTRACT, \
     RELATE_PREPARE, RELATE_PROCESS, RELATE_CHECK, RELATE_UPDATE_VIEW,\
     EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST, BRP_REGRESSION_TEST,\
-    DISTRIBUTE, KAFKA_PRODUCE
+    DISTRIBUTE, EVENT_PRODUCE
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
@@ -48,6 +48,7 @@ END_TO_END_TEST_START = "end_to_end_test_start"
 DATA_CONSISTENCY_TEST_START = "data_consistency_test_start"
 BRP_REGRESSION_TEST_START = "brp_regression_test_start"
 DISTRIBUTE_START = "distribute_start"
+EVENT_PRODUCE_START = "event_produce_start"
 
 # Default check for absence of errors before starting next step
 DEFAULT_CONDITION = has_no_errors
@@ -233,10 +234,10 @@ WORKFLOWS = {
             "function": lambda msg: start_step(DISTRIBUTE, msg),
         },
     },
-    KAFKA_PRODUCE: {
-        START: 'kafka_start',
-        'kafka_start': {
-            'function': lambda msg: start_step(KAFKA_PRODUCE, msg),
+    EVENT_PRODUCE: {
+        START: EVENT_PRODUCE_START,
+        EVENT_PRODUCE_START: {
+            'function': lambda msg: start_step(EVENT_PRODUCE, msg),
         }
     }
 }
