@@ -5,37 +5,37 @@ Requires one or more catalogs to build relations to, e.g.:
      python -m gobworkflow.start import meetbouten meetbouten
 """
 import argparse
-import sys
 import json
+import sys
 
-from gobcore.workflow.start_commands import StartCommands, StartCommand, NoSuchCommandException, StartCommandArgument
+from gobcore.workflow.start_commands import NoSuchCommandException, StartCommand, StartCommandArgument, StartCommands
+
 from gobworkflow.storage.storage import connect
-from gobworkflow.workflow.workflow import Workflow
 from gobworkflow.workflow.config import WORKFLOWS
+from gobworkflow.workflow.workflow import Workflow
 
 
-class WorkflowCommands():
-
+class WorkflowCommands:
     def __init__(self):
         start_commands = StartCommands()
 
-        usage = f'''[info | <command> [--user USER] [<args>]]
+        usage = f"""[info | <command> [--user USER] [<args>]]
 
     {"info":16s}Shows the workflows
 
-The GOB workflow commands are:'''
+The GOB workflow commands are:"""
 
         for name, command in start_commands.get_all().items():
-            usage += f'''
-    {name:16s}{command.description}'''
+            usage += f"""
+    {name:16s}{command.description}"""
 
         parser = argparse.ArgumentParser(
-            prog='python -m gobworkflow.start',
-            description='Start GOB Jobs',
-            epilog='Generieke Ontsluiting Basisregistraties',
-            usage=usage
+            prog="python -m gobworkflow.start",
+            description="Start GOB Jobs",
+            epilog="Generieke Ontsluiting Basisregistraties",
+            usage=usage,
         )
-        parser.add_argument('command', help='Command to run')
+        parser.add_argument("command", help="Command to run")
         args = parser.parse_args(sys.argv[1:2])
 
         if args.command == "info":
@@ -50,30 +50,30 @@ The GOB workflow commands are:'''
                 exit(1)
 
     def show_workflows(self):
-        print(json.dumps(WORKFLOWS, indent=4, default=lambda o: ''))
+        print(json.dumps(WORKFLOWS, indent=4, default=lambda o: ""))
 
     def _extract_parser_arg_kwargs(self, arg: StartCommandArgument):
         kwargs = {
-            'help': arg.description,
+            "help": arg.description,
         }
 
         if arg.action:
-            kwargs['action'] = arg.action
+            kwargs["action"] = arg.action
 
         # If action 'store_true', the rest of the args should not be added
-        if kwargs.get('action') == 'store_true':
+        if kwargs.get("action") == "store_true":
             return kwargs
 
-        kwargs['type'] = str
+        kwargs["type"] = str
 
         if not arg.required:
-            kwargs['nargs'] = '?'
+            kwargs["nargs"] = "?"
 
         if arg.default:
-            kwargs['default'] = arg.default
+            kwargs["default"] = arg.default
 
         if arg.choices:
-            kwargs['choices'] = arg.choices
+            kwargs["choices"] = arg.choices
 
         return kwargs
 
@@ -90,13 +90,13 @@ The GOB workflow commands are:'''
             kwargs = self._extract_parser_arg_kwargs(arg)
 
             if arg.named:
-                parser.add_argument(f'--{arg.name}', **kwargs)
+                parser.add_argument(f"--{arg.name}", **kwargs)
             else:
                 parser.add_argument(arg.name, **kwargs)
             names.append(arg.name)
 
-        parser.add_argument('--user', help='User id that starts the command', required=False)
-        names.append('user')
+        parser.add_argument("--user", help="User id that starts the command", required=False)
+        names.append("user")
         input_args = parser.parse_args(sys.argv[2:])
 
         input_values = {}
@@ -122,7 +122,7 @@ The GOB workflow commands are:'''
 
 
 def init():
-    if __name__ == '__main__':
+    if __name__ == "__main__":
         connect()
         WorkflowCommands()
 

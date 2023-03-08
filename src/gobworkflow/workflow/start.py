@@ -6,8 +6,9 @@ A has_no_errors method is available to be used as a default condition to start a
 """
 
 from gobcore.logging.logger import logger
-from gobcore.message_broker.config import WORKFLOW_EXCHANGE
 from gobcore.message_broker import publish
+from gobcore.message_broker.config import WORKFLOW_EXCHANGE
+
 from gobworkflow.config import LOG_HANDLERS, LOG_NAME
 
 # Special return value that a function can return to end the current workflow
@@ -24,10 +25,7 @@ def start_workflow(workflow_name, step_name, msg):
     :return: None
     """
     # Add the workflow info to the message
-    msg['workflow'] = {
-        'workflow_name': workflow_name,
-        'step_name': step_name
-    }
+    msg["workflow"] = {"workflow_name": workflow_name, "step_name": step_name}
     # Post a message to start the specified workflow
     start_step("workflow", msg)
     return END_OF_WORKFLOW  # End current workflow when starting a new workflow
@@ -46,10 +44,10 @@ def has_no_errors(msg):
     :param msg: The message to check
     :return: True if the message is OK to proceed to the next step
     """
-    summary = msg.get('summary')
+    summary = msg.get("summary")
     is_ok = True
     if summary:
-        num_errors = len(summary.get('errors', []))
+        num_errors = len(summary.get("errors", []))
         is_ok = num_errors == 0
         if not is_ok:
             with logger.configure_context(msg, LOG_NAME, LOG_HANDLERS):

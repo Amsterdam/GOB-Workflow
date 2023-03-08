@@ -4,7 +4,7 @@ services:
   gobworkflow:
     build:
       context: src
-      target: development
+      target: application
     image: gob_workflow
     container_name: gobworkflow
     environment:
@@ -19,7 +19,7 @@ services:
       - ./src/gobworkflow:/app/gobworkflow
       - ./src/tests:/app/tests
       - ./src/alembic:/app/alembic
-      - ${GOB_CORE_DIR-../GOB-Core}:/app/GOB-Core
+#      - ${GOB_CORE_DIR-../GOB-Core}:/app/GOB-Core
 
 volumes:
   gob-volume:

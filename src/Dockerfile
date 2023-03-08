@@ -49,7 +49,7 @@ FROM application as test
 USER root
 
 # Copy test module and tests.
-COPY test.sh .flake8 pytest.ini ./
+COPY test.sh pyproject.toml ./
 COPY tests tests
 
 # Copy .jenkins scripts to where Jenkins / Ansible expect them.
