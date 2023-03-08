@@ -10,8 +10,9 @@ tree = WorkflowTreeNode.from_dict(WORKFLOWS[IMPORT])
 
 
 """
-from gobworkflow.workflow.config import START, DEFAULT_CONDITION, get_workflow
-from typing import List, Callable
+from typing import Callable, List
+
+from gobworkflow.workflow.config import DEFAULT_CONDITION, START, get_workflow
 
 
 class WorkflowTreeNode:
@@ -34,7 +35,7 @@ class WorkflowTreeNode:
         self.header_parameters = {}
 
     @staticmethod
-    def from_dict(workflow: dict, step_name=START) -> 'WorkflowTreeNode':
+    def from_dict(workflow: dict, step_name=START) -> "WorkflowTreeNode":
         """
         Usage (WORKFLOWS[IMPORT] refers to the config in gobworkflow.workflow):
 
@@ -52,14 +53,14 @@ class WorkflowTreeNode:
 
         def _get_workflow(next):
             # Jump to other workflow if defined in next step, otherwise stay in current workflow
-            if next.get('workflow'):
-                return get_workflow(next['workflow'])
+            if next.get("workflow"):
+                return get_workflow(next["workflow"])
             return workflow
 
         return WorkflowTreeNode(
             step_name,
-            step.get('function'),
-            [NextStep.from_dict(_get_workflow(next), next) for next in step.get('next', [])]
+            step.get("function"),
+            [NextStep.from_dict(_get_workflow(next), next) for next in step.get("next", [])],
         )
 
     def to_dict(self):
@@ -68,14 +69,9 @@ class WorkflowTreeNode:
 
         :return:
         """
-        return {
-            self.name: {
-                'function': self.function,
-                'next': [n.to_dict() for n in self.next]
-            }
-        }
+        return {self.name: {"function": self.function, "next": [n.to_dict() for n in self.next]}}
 
-    def get_leafs(self) -> List['WorkflowTreeNode']:
+    def get_leafs(self) -> List["WorkflowTreeNode"]:
         """Returns all leaf nodes in this tree
 
         :return:
@@ -101,7 +97,7 @@ class WorkflowTreeNode:
                 return node
         return None
 
-    def append_node(self, node: 'WorkflowTreeNode', condition=None):
+    def append_node(self, node: "WorkflowTreeNode", condition=None):
         """Appends node to this node
 
         :param node:
@@ -117,7 +113,7 @@ class WorkflowTreeNode:
         :param append_str:
         :return:
         """
-        self.name = f'{self.name}_{append_str}'
+        self.name = f"{self.name}_{append_str}"
 
         for n in self.next:
             n.node.append_to_names(append_str)
@@ -128,29 +124,29 @@ class WorkflowTreeNode:
     def _to_string(self, depth=0):
         spaces = 2
 
-        return f"{' ' * spaces * depth}{self.name} " \
-               f"({', '.join([f'{k}:{v}' for k, v in self.header_parameters.items()])})\n" + \
-               "".join([n.node._to_string(depth + 1) for n in self.next])
+        return (
+            f"{' ' * spaces * depth}{self.name} "
+            f"({', '.join([f'{k}:{v}' for k, v in self.header_parameters.items()])})\n"
+            + "".join([n.node._to_string(depth + 1) for n in self.next])
+        )
 
     def __str__(self):
         return self._to_string()
 
 
 class NextStep:
-    """Wraps a next step in a workflow tree with its condition.
-
-    """
+    """Wraps a next step in a workflow tree with its condition."""
 
     def __init__(self, node: WorkflowTreeNode, condition: Callable = None):
         self.node = node
         self.condition = condition or DEFAULT_CONDITION
 
     @staticmethod
-    def from_dict(workflow: dict, next: dict) -> 'NextStep':
-        return NextStep(WorkflowTreeNode.from_dict(workflow, next['step']), next.get('condition'))
+    def from_dict(workflow: dict, next: dict) -> "NextStep":
+        return NextStep(WorkflowTreeNode.from_dict(workflow, next["step"]), next.get("condition"))
 
     def to_dict(self) -> dict:
         return {
-            'step': self.node.to_dict(),
-            'condition': self.condition,
+            "step": self.node.to_dict(),
+            "condition": self.condition,
         }

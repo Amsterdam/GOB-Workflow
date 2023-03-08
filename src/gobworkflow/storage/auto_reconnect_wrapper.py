@@ -21,7 +21,6 @@ class TooManyReconnectsException(Exception):
 
 
 class AutoReconnector:
-
     def __init__(self, is_connected, connect, disconnect):
         """Constructor
 

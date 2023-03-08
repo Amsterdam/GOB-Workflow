@@ -5,7 +5,7 @@ HOOK_KEY = "result_key"
 
 
 def _get_hook_key(msg):
-    return msg.get('header', {}).get(HOOK_KEY)
+    return msg.get("header", {}).get(HOOK_KEY)
 
 
 def has_hooks(msg):

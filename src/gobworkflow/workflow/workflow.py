@@ -19,20 +19,18 @@ import copy
 
 from gobcore.logging.logger import logger
 from gobcore.message_broker import publish
+from gobcore.status.heartbeat import STATUS_REJECTED, STATUS_START
 from gobcore.workflow.start_workflow import retry_workflow
 
-from gobworkflow.workflow.config import WORKFLOWS
-from gobworkflow.workflow.jobs import job_start, job_end, step_start, step_status
-from gobcore.status.heartbeat import STATUS_START, STATUS_REJECTED
-from gobworkflow.storage.storage import job_runs, job_get, job_update
-from gobworkflow.workflow.start import END_OF_WORKFLOW, start_step
-
-from gobworkflow.workflow.tree import WorkflowTreeNode
 from gobworkflow.config import LOG_HANDLERS, LOG_NAME
+from gobworkflow.storage.storage import job_get, job_runs, job_update
+from gobworkflow.workflow.config import WORKFLOWS
+from gobworkflow.workflow.jobs import job_end, job_start, step_start, step_status
+from gobworkflow.workflow.start import END_OF_WORKFLOW, start_step
+from gobworkflow.workflow.tree import WorkflowTreeNode
 
 
 class Workflow:
-
     def __init__(self, workflow_name, step_name=None, dynamic_workflow_steps=None):
         """
         Initializes a workflow.
@@ -92,20 +90,19 @@ class Workflow:
         workflow = None
 
         for i, step in enumerate(workflow_steps):
-            if step['type'] == 'workflow':
-                new_step = WorkflowTreeNode.from_dict(WORKFLOWS[step['workflow']])
+            if step["type"] == "workflow":
+                new_step = WorkflowTreeNode.from_dict(WORKFLOWS[step["workflow"]])
 
-            elif step['type'] == 'workflow_step':
+            elif step["type"] == "workflow_step":
                 new_step = WorkflowTreeNode(
-                    name=step['step_name'],
-                    function=lambda msg, step_name=step['step_name']: start_step(step_name, msg)
+                    name=step["step_name"], function=lambda msg, step_name=step["step_name"]: start_step(step_name, msg)
                 )
 
             else:
                 raise NotImplementedError
 
             new_step.append_to_names(str(i))
-            new_step.set_header_parameters(step.get('header', {}))
+            new_step.set_header_parameters(step.get("header", {}))
 
             if workflow:
                 for leaf in workflow.get_leafs():
@@ -116,7 +113,7 @@ class Workflow:
         return workflow
 
     def start_new(self, header_attrs: dict, retry_time=0):
-        return self.start({'header': {**header_attrs}}, retry_time)
+        return self.start({"header": {**header_attrs}}, retry_time)
 
     def start(self, msg, retry_time=0):
         """
@@ -128,16 +125,16 @@ class Workflow:
         original_msg = copy.deepcopy(msg)
 
         job = None
-        msg['header'] = msg.get('header', {})  # init header if not present
-        job_id = msg['header'].get("jobid")
+        msg["header"] = msg.get("header", {})  # init header if not present
+        job_id = msg["header"].get("jobid")
         if job_id is None:
-            msg['header'].update(self._step.header_parameters)
+            msg["header"].update(self._step.header_parameters)
             job = job_start(self._workflow_name, msg)
-            msg['header'] = {
-                **msg.get('header', {}),
+            msg["header"] = {
+                **msg.get("header", {}),
             }
             if job_runs(job, msg):
-                msg['header']['process_id'] = job['id']
+                msg["header"]["process_id"] = job["id"]
                 self.reject(msg, job)
                 return self.retry_or_fail(original_msg, retry_time)
         self._function(self._step)(msg)
@@ -154,12 +151,12 @@ class Workflow:
         :return:
         """
         if retry_time > 0:
-            if not msg.get('workflow'):
+            if not msg.get("workflow"):
                 # Initialize the workflow part of the message for the current workflow
-                msg['workflow'] = {
-                    'workflow_name': self._workflow_name,
-                    'step_name': self._step_name,
-                    'retry_time': retry_time
+                msg["workflow"] = {
+                    "workflow_name": self._workflow_name,
+                    "step_name": self._step_name,
+                    "retry_time": retry_time,
                 }
             if retry_workflow(msg):
                 # Succesfully retried workflow
@@ -179,23 +176,23 @@ class Workflow:
         :return:
         """
         # Start a workflow step to reject the message
-        msg["header"]["process_id"] = job['id']
-        msg["header"]["entity"] = msg["header"].get('collection')
-        step = step_start("accept", msg['header'])
-        step_status(job['id'], step['id'], STATUS_START)
+        msg["header"]["process_id"] = job["id"]
+        msg["header"]["entity"] = msg["header"].get("collection")
+        step = step_start("accept", msg["header"])
+        step_status(job["id"], step["id"], STATUS_START)
         # End the workflow step and then the workflow job
-        step_status(job['id'], step['id'], STATUS_REJECTED)
-        return job_end(job['id'], STATUS_REJECTED)
+        step_status(job["id"], step["id"], STATUS_REJECTED)
+        return job_end(job["id"], STATUS_REJECTED)
 
     @classmethod
     def end_of_workflow(cls, msg):
         with logger.configure_context(msg, LOG_NAME, LOG_HANDLERS):
-            on_complete = msg['header'].pop('on_workflow_complete', None)
+            on_complete = msg["header"].pop("on_workflow_complete", None)
             if on_complete is not None:
-                if not isinstance(on_complete, dict) or not all([key in on_complete for key in ['exchange', 'key']]):
+                if not isinstance(on_complete, dict) or not all([key in on_complete for key in ["exchange", "key"]]):
                     logger.error("on_workflow_complete should be a dict with keys 'exchange' and 'key'")
                 else:
-                    publish(on_complete['exchange'], on_complete['key'], msg)
+                    publish(on_complete["exchange"], on_complete["key"], msg)
                     logger.info(f"Publish on_workflow_complete to {on_complete['exchange']} with {on_complete['key']}")
 
             logger.info("End of workflow")
@@ -209,10 +206,12 @@ class Workflow:
                 current_counts[log_type] = 0
             current_counts[log_type] += count
 
-        job_update({
-            'id': job.id,
-            'log_counts': current_counts,
-        })
+        job_update(
+            {
+                "id": job.id,
+                "log_counts": current_counts,
+            }
+        )
 
     def handle_result(self):
         """
@@ -224,14 +223,15 @@ class Workflow:
         When multiple next steps are found, only the first one is executed
         :return:
         """
+
         def handle_msg(msg):
             """
             Handle the result of a step
             :param msg: The results of the step that was executed
             :return:
             """
-            job = job_get(msg['header'].get('jobid'))
-            self._update_job_log_counts(job, msg.get('summary', {}).get('log_counts', {}))
+            job = job_get(msg["header"].get("jobid"))
+            self._update_job_log_counts(job, msg.get("summary", {}).get("log_counts", {}))
 
             if self._workflow_changed:
                 # Start at beginning again (self._step points to first step in the workflow now)
@@ -253,17 +253,18 @@ class Workflow:
         :param step_name: The name of the step within the workflow
         :return:
         """
+
         def exec_step(msg):
             """
             Execute a workflow step
             :param msg: Workflow step parameters
             :return:
             """
-            msg['header'] = msg.get('header', {})  # init header if not present
-            msg['header'].update(step.header_parameters)
+            msg["header"] = msg.get("header", {})  # init header if not present
+            msg["header"].update(step.header_parameters)
             step_start(step.name, msg["header"])  # Explicit start of new step
             # Clear any summary from the previous step
-            msg['summary'] = {}
+            msg["summary"] = {}
             result = step.function(msg)
             if result == END_OF_WORKFLOW:
                 self.end_of_workflow(msg)
