@@ -5,7 +5,8 @@ Used to create and update Jobs and JobSteps
 """
 import datetime
 
-from gobcore.status.heartbeat import STATUS_START, STATUS_FAIL, STATUS_SCHEDULED, STATUS_END
+from gobcore.status.heartbeat import STATUS_END, STATUS_FAIL, STATUS_SCHEDULED, STATUS_START
+
 from gobworkflow.storage.storage import job_save, job_update, step_save, step_update
 
 
@@ -27,11 +28,11 @@ def job_start(job_type, msg):
     """
     timestamp = _timestamp()
     # Concatenate all the non-header fields
-    args = [str(val) for key, val in msg.get('header', {}).items() if key not in ['workflow']]
+    args = [str(val) for key, val in msg.get("header", {}).items() if key not in ["workflow"]]
 
     job_name = f"{job_type}.{'.'.join(args)}"
     start_timestamp = int(_timestamp().replace(microsecond=0).timestamp())
-    process_id = msg.get('header', {}).get('process_id', f"{start_timestamp}.{job_name}")
+    process_id = msg.get("header", {}).get("process_id", f"{start_timestamp}.{job_name}")
 
     job_info = {
         "name": job_name,
@@ -42,10 +43,10 @@ def job_start(job_type, msg):
         "end": None,
         "status": STATUS_START,
         "user": msg.get("header", {}).get("user"),
-        "catalogue": msg.get('header', {}).get('catalogue'),
-        "collection": msg.get('header', {}).get('collection'),
-        "attribute": msg.get('header', {}).get('attribute'),
-        "application": msg.get('header', {}).get('application'),
+        "catalogue": msg.get("header", {}).get("catalogue"),
+        "collection": msg.get("header", {}).get("collection"),
+        "attribute": msg.get("header", {}).get("attribute"),
+        "application": msg.get("header", {}).get("application"),
     }
     job = job_save(job_info)
     # Store the job and register its id
@@ -67,11 +68,7 @@ def job_end(id, status=STATUS_END):
     if id is None:
         return
     timestamp = _timestamp()
-    job_info = {
-        "id": id,
-        "end": timestamp,
-        "status": status
-    }
+    job_info = {"id": id, "end": timestamp, "status": status}
     job_update(job_info)
     return job_info
 
@@ -115,11 +112,7 @@ def step_status(jobid, stepid, status):
     """
     timestamp = _timestamp()
     start_end = "start" if status == STATUS_START else "end"
-    step_info = {
-        "id": stepid,
-        "status": status,
-        start_end: timestamp
-    }
+    step_info = {"id": stepid, "status": status, start_end: timestamp}
     step_info = step_update(step_info)
     if status == STATUS_FAIL:
         job_end(jobid)

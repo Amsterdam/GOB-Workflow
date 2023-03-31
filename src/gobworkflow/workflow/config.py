@@ -13,12 +13,27 @@ Each next step may define a condition that needs to be met in order to get eligi
 When one or more next steps match its condition, the first one will be executed
 If no next steps are defined on can be found the workflow is ended
 """
-from gobworkflow.workflow.start import start_step, has_no_errors
 from gobcore.exceptions import GOBException
-from gobcore.message_broker.config import APPLY, COMPARE, FULLUPDATE, PREPARE, BAG_EXTRACT, \
-    RELATE_PREPARE, RELATE_PROCESS, RELATE_CHECK, RELATE_UPDATE_VIEW,\
-    EXPORT, EXPORT_TEST, END_TO_END_TEST, DATA_CONSISTENCY_TEST, BRP_REGRESSION_TEST,\
-    DISTRIBUTE, KAFKA_PRODUCE
+from gobcore.message_broker.config import (
+    APPLY,
+    BAG_EXTRACT,
+    BRP_REGRESSION_TEST,
+    COMPARE,
+    DATA_CONSISTENCY_TEST,
+    DISTRIBUTE,
+    END_TO_END_TEST,
+    EVENT_PRODUCE,
+    EXPORT,
+    EXPORT_TEST,
+    FULLUPDATE,
+    PREPARE,
+    RELATE_CHECK,
+    RELATE_PREPARE,
+    RELATE_PROCESS,
+    RELATE_UPDATE_VIEW,
+)
+
+from gobworkflow.workflow.start import has_no_errors, start_step
 
 START = "start"  # workflow[START] is the name of the first step in a workflow
 
@@ -48,6 +63,7 @@ END_TO_END_TEST_START = "end_to_end_test_start"
 DATA_CONSISTENCY_TEST_START = "data_consistency_test_start"
 BRP_REGRESSION_TEST_START = "brp_regression_test_start"
 DISTRIBUTE_START = "distribute_start"
+EVENT_PRODUCE_START = "event_produce_start"
 
 # Default check for absence of errors before starting next step
 DEFAULT_CONDITION = has_no_errors
@@ -69,71 +85,57 @@ WORKFLOWS = {
     # },
     UPDATE_MODEL: {
         START: UPDATE_MODEL,
-        UPDATE_MODEL: {
-            "function": lambda msg: start_step(APPLY, msg)
-        },
+        UPDATE_MODEL: {"function": lambda msg: start_step(APPLY, msg)},
     },
     PREPARE: {
         START: PREPARE_START,
         PREPARE_START: {
             "function": lambda msg: start_step(PREPARE, msg),
-        }
+        },
     },
     BAG_EXTRACT: {
         START: BAG_EXTRACT_START,
         BAG_EXTRACT_START: {
             "function": lambda msg: start_step(BAG_EXTRACT, msg),
-        }
+        },
     },
     IMPORT: {
         START: IMPORT_READ,
         IMPORT_READ: {
             "function": lambda msg: start_step(IMPORT, msg),
-            "next": [
-                {
-                    "step": UPDATE_MODEL
-                }
-            ],
+            "next": [{"step": UPDATE_MODEL}],
         },
         UPDATE_MODEL: {
-            "function": lambda msg: start_step(APPLY, {
-                **msg,
-                "header": {
-                    **msg["header"],
-                    "suppress_notifications": True,
-                }
-            }),
-            "next": [
+            "function": lambda msg: start_step(
+                APPLY,
                 {
-                    "step": IMPORT_COMPARE
-                }
-            ],
+                    **msg,
+                    "header": {
+                        **msg["header"],
+                        "suppress_notifications": True,
+                    },
+                },
+            ),
+            "next": [{"step": IMPORT_COMPARE}],
         },
         IMPORT_COMPARE: {
-            "function": lambda msg: start_step(COMPARE, {
-                **msg,
-                "header": {
-                    **msg["header"],
-                    "suppress_notifications": False,
-                }
-            }),
-            "next": [
+            "function": lambda msg: start_step(
+                COMPARE,
                 {
-                    "step": IMPORT_UPLOAD
-                }
-            ],
+                    **msg,
+                    "header": {
+                        **msg["header"],
+                        "suppress_notifications": False,
+                    },
+                },
+            ),
+            "next": [{"step": IMPORT_UPLOAD}],
         },
         IMPORT_UPLOAD: {
             "function": lambda msg: start_step(FULLUPDATE, msg),
-            "next": [
-                {
-                    "step": APPLY_EVENTS
-                }
-            ],
+            "next": [{"step": APPLY_EVENTS}],
         },
-        APPLY_EVENTS: {
-            "function": lambda msg: start_step(APPLY, msg)
-        },
+        APPLY_EVENTS: {"function": lambda msg: start_step(APPLY, msg)},
     },
     IMPORT_OBJECT: {
         START: IMPORT_OBJECT,
@@ -145,20 +147,16 @@ WORKFLOWS = {
                     "workflow": IMPORT,
                     "step": UPDATE_MODEL,
                 }
-            ]
+            ],
         },
     },
     EXPORT: {
         START: EXPORT_GENERATE,
-        EXPORT_GENERATE: {
-            "function": lambda msg: start_step(EXPORT, msg)
-        },
+        EXPORT_GENERATE: {"function": lambda msg: start_step(EXPORT, msg)},
     },
     EXPORT_TEST: {
         START: EXPORT_TEST,
-        EXPORT_TEST: {
-            "function": lambda msg: start_step(EXPORT_TEST, msg)
-        },
+        EXPORT_TEST: {"function": lambda msg: start_step(EXPORT_TEST, msg)},
     },
     RELATE: {
         START: RELATE_PREPARE,
@@ -167,9 +165,9 @@ WORKFLOWS = {
             "next": [
                 {
                     "step": RELATE_PROCESS,
-                    "condition": lambda msg: not msg.get('header', {}).get('is_split', False),
+                    "condition": lambda msg: not msg.get("header", {}).get("is_split", False),
                 }
-            ]
+            ],
         },
         RELATE_PROCESS: {
             "function": lambda msg: start_step(RELATE_PROCESS, msg),
@@ -177,15 +175,11 @@ WORKFLOWS = {
                 {
                     "step": IMPORT_UPLOAD,
                 }
-            ]
+            ],
         },
         IMPORT_UPLOAD: {
             "function": lambda msg: start_step(FULLUPDATE, msg),
-            "next": [
-                {
-                    "step": APPLY_EVENTS
-                }
-            ],
+            "next": [{"step": APPLY_EVENTS}],
         },
         APPLY_EVENTS: {
             "function": lambda msg: start_step(APPLY, msg),
@@ -194,32 +188,21 @@ WORKFLOWS = {
                     "condition": lambda _: True,
                     "step": RELATE_UPDATE_VIEW,
                 }
-            ]
+            ],
         },
         RELATE_UPDATE_VIEW: {
             "function": lambda msg: start_step(RELATE_UPDATE_VIEW, msg),
-            "next": [
-                {
-                    "condition": lambda _: True,
-                    "step": RELATE_CHECK
-                }
-            ]
+            "next": [{"condition": lambda _: True, "step": RELATE_CHECK}],
         },
-        RELATE_CHECK: {
-            "function": lambda msg: start_step(RELATE_CHECK, msg)
-        }
+        RELATE_CHECK: {"function": lambda msg: start_step(RELATE_CHECK, msg)},
     },
     END_TO_END_TEST: {
         START: END_TO_END_TEST_START,
-        END_TO_END_TEST_START: {
-            "function": lambda msg: start_step(END_TO_END_TEST, msg)
-        }
+        END_TO_END_TEST_START: {"function": lambda msg: start_step(END_TO_END_TEST, msg)},
     },
     DATA_CONSISTENCY_TEST: {
         START: DATA_CONSISTENCY_TEST_START,
-        DATA_CONSISTENCY_TEST_START: {
-            "function": lambda msg: start_step(DATA_CONSISTENCY_TEST, msg)
-        }
+        DATA_CONSISTENCY_TEST_START: {"function": lambda msg: start_step(DATA_CONSISTENCY_TEST, msg)},
     },
     BRP_REGRESSION_TEST: {
         START: BRP_REGRESSION_TEST_START,
@@ -233,12 +216,12 @@ WORKFLOWS = {
             "function": lambda msg: start_step(DISTRIBUTE, msg),
         },
     },
-    KAFKA_PRODUCE: {
-        START: 'kafka_start',
-        'kafka_start': {
-            'function': lambda msg: start_step(KAFKA_PRODUCE, msg),
-        }
-    }
+    EVENT_PRODUCE: {
+        START: EVENT_PRODUCE_START,
+        EVENT_PRODUCE_START: {
+            "function": lambda msg: start_step(EVENT_PRODUCE, msg),
+        },
+    },
 }
 
 

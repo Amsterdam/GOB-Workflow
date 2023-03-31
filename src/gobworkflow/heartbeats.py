@@ -14,7 +14,8 @@ If the status has changed the change is written to the storage
 import datetime
 
 from gobcore.status.heartbeat import HEARTBEAT_INTERVAL
-from gobworkflow.storage.storage import update_service, remove_service, get_services, mark_service_dead
+
+from gobworkflow.storage.storage import get_services, mark_service_dead, remove_service, update_service
 
 # Remove a service after not having received anything for SERVICE_REMOVAL_TIMEOUT seconds
 _SERVICE_REMOVAL_TIMEOUT = HEARTBEAT_INTERVAL * 60
@@ -37,17 +38,17 @@ def on_heartbeat(msg):
         "host": msg.get("host"),
         "pid": msg.get("pid"),
         "is_alive": msg["is_alive"],
-        "timestamp": msg["timestamp"]
+        "timestamp": msg["timestamp"],
     }
 
-    service_tasks = {
-        thread['name']: {
-            'service_name': service_name,
-            'name': thread['name'],
-            'is_alive': thread['is_alive']
+    service_tasks = (
+        {
+            thread["name"]: {"service_name": service_name, "name": thread["name"], "is_alive": thread["is_alive"]}
+            for thread in msg["threads"]
         }
-        for thread in msg['threads']
-    } if service['is_alive'] else {}
+        if service["is_alive"]
+        else {}
+    )
 
     # Update in storage
     update_service(service, service_tasks.values())

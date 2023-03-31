@@ -6,22 +6,19 @@ import datetime
 import json
 from typing import Optional
 
-from alembic.runtime import migration
 import alembic.config
 import alembic.script
-
-from sqlalchemy import create_engine, or_, and_, String
+from alembic.runtime import migration
+from gobcore.model.sa.management import AuditLog, Base, Job, JobStep, Log, Service, ServiceTask, Task
+from gobcore.typesystem.json import GobTypeJSONEncoder
+from sqlalchemy import String, and_, create_engine, or_
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import DBAPIError, IntegrityError
-from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.engine.url import URL
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql.expression import cast
-
-from gobcore.typesystem.json import GobTypeJSONEncoder
-
-from gobcore.model.sa.management import Base, Job, JobStep, Log, Service, ServiceTask, Task, AuditLog
 
 from gobworkflow.config import GOB_MGMT_DB
 from gobworkflow.storage.auto_reconnect_wrapper import auto_reconnect_wrapper
@@ -42,7 +39,7 @@ def connect(force_migrate=False):
     global session, engine
 
     try:
-        engine = create_engine(URL.create(**GOB_MGMT_DB), connect_args={'sslmode': 'require'})
+        engine = create_engine(URL.create(**GOB_MGMT_DB), connect_args={"sslmode": "require"})
 
         migrate_storage(force_migrate)
 
@@ -81,23 +78,24 @@ def migrate_storage(force_migrate):
 
     try:
         # Check if storage is up-to-date
-        alembic_cfg = alembic.config.Config('alembic.ini')
+        alembic_cfg = alembic.config.Config("alembic.ini")
         script = alembic.script.ScriptDirectory.from_config(alembic_cfg)
         with engine.begin() as conn:
             context = migration.MigrationContext.configure(conn)
             up_to_date = context.get_current_revision() == script.get_current_head()
 
         if not up_to_date:
-            print('Migrating storage')
+            print("Migrating storage")
             alembicArgs = [
-                '--raiseerr',
-                'upgrade', 'head',
+                "--raiseerr",
+                "upgrade",
+                "head",
             ]
             alembic.config.main(argv=alembicArgs)
     except Exception as e:
-        print(f'Storage migration failed: {str(e)}')
+        print(f"Storage migration failed: {str(e)}")
     else:  # No exception
-        print('Storage is up-to-date')
+        print("Storage is up-to-date")
 
     # Always unlock
     engine.execute(f"SELECT pg_advisory_unlock({MIGRATION_LOCK})")
@@ -153,23 +151,23 @@ session_auto_reconnect = auto_reconnect_wrapper(is_connected=is_connected, conne
 @session_auto_reconnect
 def save_log(msg):
     # Encode the json data
-    json_data = json.dumps(msg.get('data', None), cls=GobTypeJSONEncoder)
+    json_data = json.dumps(msg.get("data", None), cls=GobTypeJSONEncoder)
 
     # Create the log record
     record = Log(
-        timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'),
-        process_id=msg.get('process_id', None),
-        source=msg.get('source', None),
-        application=msg.get('application', None),
-        destination=msg.get('destination', None),
-        catalogue=msg.get('catalogue', None),
-        entity=msg.get('entity', None),
-        level=msg.get('level', None),
-        name=msg.get('name', None),
-        msgid=msg.get('id', None),
-        msg=msg.get('msg', None),
-        jobid=msg.get('jobid', None),
-        stepid=msg.get('stepid', None),
+        timestamp=datetime.datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f"),
+        process_id=msg.get("process_id", None),
+        source=msg.get("source", None),
+        application=msg.get("application", None),
+        destination=msg.get("destination", None),
+        catalogue=msg.get("catalogue", None),
+        entity=msg.get("entity", None),
+        level=msg.get("level", None),
+        name=msg.get("name", None),
+        msgid=msg.get("id", None),
+        msg=msg.get("msg", None),
+        jobid=msg.get("jobid", None),
+        stepid=msg.get("stepid", None),
         data=json_data,
     )
     try:
@@ -183,12 +181,12 @@ def save_log(msg):
 @session_auto_reconnect
 def save_audit_log(msg):
     record = AuditLog(
-        timestamp=datetime.datetime.strptime(msg['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'),
-        source=msg.get('source'),
-        destination=msg.get('destination'),
-        type=msg.get('type'),
-        data=msg.get('data'),
-        request_uuid=msg.get('request_uuid'),
+        timestamp=datetime.datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f"),
+        source=msg.get("source"),
+        destination=msg.get("destination"),
+        type=msg.get("type"),
+        data=msg.get("data"),
+        request_uuid=msg.get("request_uuid"),
     )
     session.add(record)
     session.commit()
@@ -229,10 +227,7 @@ def remove_service(service):
 
     try:
         # remove service
-        session.query(Service) \
-            .filter(Service.host == service.host) \
-            .filter(Service.name == service.name) \
-            .delete()
+        session.query(Service).filter(Service.host == service.host).filter(Service.name == service.name).delete()
         session.commit()
     except ObjectDeletedError:
         # This method can be called for the same service by multiple workflow instances
@@ -249,10 +244,12 @@ def update_service(service, tasks):
     :return: None
     """
     # Get the current service or create it if not yet exists
-    current = session.query(Service)\
-        .filter(or_(Service.host == service["host"], Service.host == None))\
-        .filter(Service.name == service["name"])\
-        .first()  # noqa: E711
+    current = (
+        session.query(Service)
+        .filter(or_(Service.host == service["host"], Service.host == None))  # noqa: E711
+        .filter(Service.name == service["name"])
+        .first()
+    )
 
     if current:
         current.is_alive = service["is_alive"]
@@ -368,15 +365,14 @@ def job_runs(jobinfo: Job, msg: dict) -> bool:
     :param msg: Dict containing parameters to the workflow
     :return: True if a running job is found, else False
     """
-    header = msg.get('header')
-    check_args = ['catalogue', 'collection', 'attribute', 'application']
-    job_args = [header.get(key) for key in ['destination', 'entity_id', 'source'] if header.get(key)]
+    header = msg.get("header")
+    check_args = ["catalogue", "collection", "attribute", "application"]
+    job_args = [header.get(key) for key in ["destination", "entity_id", "source"] if header.get(key)]
 
     job = (
-        session
-        .query(Job)
-        .filter(Job.id != jobinfo['id'])
-        .filter(Job.type == jobinfo['type'])
+        session.query(Job)
+        .filter(Job.id != jobinfo["id"])
+        .filter(Job.type == jobinfo["type"])
         .filter_by(**{arg: header.get(arg) for arg in check_args})
         .filter(cast(Job.args, ARRAY(String)).contains(cast(job_args, ARRAY(String))))
         .filter(Job.end == None)  # noqa E711 (== None)
@@ -490,8 +486,11 @@ def task_lock(task):
     :param task:
     :return:
     """
-    step_cnt = session.query(Task).filter(and_(Task.id == task.id, Task.lock == None)) \
-        .update({'lock': int(datetime.datetime.now().timestamp())})  # noqa: E711 (== None)
+    step_cnt = (
+        session.query(Task)
+        .filter(and_(Task.id == task.id, Task.lock == None))  # noqa: E711
+        .update({"lock": int(datetime.datetime.now().timestamp())})
+    )
     session.commit()
 
     return step_cnt > 0
@@ -504,8 +503,9 @@ def task_unlock(task):
     :param task:
     :return:
     """
-    step_cnt = session.query(Task).filter(and_(Task.id == task.id, Task.lock != None)) \
-        .update({'lock': None})  # noqa: E711 (!= None)
+    step_cnt = (
+        session.query(Task).filter(and_(Task.id == task.id, Task.lock != None)).update({"lock": None})  # noqa: E711
+    )
     session.commit()
     assert step_cnt > 0, "Task was already unlocked. That can't be right."
 
