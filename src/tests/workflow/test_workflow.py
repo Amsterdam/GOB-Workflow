@@ -214,7 +214,7 @@ class TestWorkflow(TestCase):
             wf = Workflow('Workflow', dynamic_workflow_steps=dynamic)
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
-    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k, **kwargs: False)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start(self, job_start, step_start, mock_tree):
@@ -244,7 +244,7 @@ class TestWorkflow(TestCase):
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
-    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: True)
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k, **kwargs: True)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start_and_end_job_runs(self, job_start, step_start, mock_tree):
@@ -256,7 +256,7 @@ class TestWorkflow(TestCase):
         job_start.assert_called_with("Workflow", {'header': {'process_id': mock.ANY}})
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
-    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k, **kwargs: False)
     @mock.patch("gobworkflow.workflow.workflow.logger", mock.MagicMock())
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
@@ -268,7 +268,7 @@ class TestWorkflow(TestCase):
         step_start.assert_called_with('Step', {})
 
     @mock.patch("gobworkflow.workflow.workflow.WORKFLOWS", WORKFLOWS)
-    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k: False)
+    @mock.patch("gobworkflow.workflow.workflow.job_runs", lambda j, k, **kwargs: False)
     @mock.patch("gobworkflow.workflow.workflow.step_start")
     @mock.patch("gobworkflow.workflow.workflow.job_start")
     def test_start_with_contents(self, job_start, step_start, mock_tree):

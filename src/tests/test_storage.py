@@ -517,6 +517,10 @@ class TestJobRuns(TestCase):
         result = job_runs(job_info, msg)
         self.assertEqual(result, False)
 
+        # Is zombie, but should not be allowed to run a job in parallel
+        result = job_runs(job_info, msg, allow_parallel_zombie=False)
+        self.assertEqual(result, True)
+
     @mock.patch('gobworkflow.storage.storage.ARRAY')
     @mock.patch('gobworkflow.storage.storage.cast')
     @mock.patch('gobworkflow.storage.storage.Job')
