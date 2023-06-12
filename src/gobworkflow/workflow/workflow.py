@@ -45,11 +45,14 @@ class Workflow:
         self._workflow_name = workflow_name
         self._step_name = step_name
         self._workflow_changed = False
+        self._allow_parallel_zombie = True
 
         if dynamic_workflow_steps:
             workflow = self._build_dynamic_workflow(dynamic_workflow_steps)
         else:
-            workflow = WorkflowTreeNode.from_dict(WORKFLOWS[self._workflow_name])
+            workflow_dict = WORKFLOWS[self._workflow_name]
+            workflow = WorkflowTreeNode.from_dict(workflow_dict)
+            self._allow_parallel_zombie = workflow_dict.get("allow_parallel_zombie", True)
 
         self._step = workflow if step_name is None else workflow.get_node(step_name)
 
@@ -133,7 +136,7 @@ class Workflow:
             msg["header"] = {
                 **msg.get("header", {}),
             }
-            if job_runs(job, msg):
+            if job_runs(job, msg, allow_parallel_zombie=self._allow_parallel_zombie):
                 msg["header"]["process_id"] = job["id"]
                 self.reject(msg, job)
                 return self.retry_or_fail(original_msg, retry_time)
