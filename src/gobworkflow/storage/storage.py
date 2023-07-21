@@ -1,7 +1,9 @@
-"""Storage
+"""Storage.
 
 This module encapsulates the GOB Management storage.
 """
+
+
 import datetime
 import json
 from typing import Optional
@@ -11,7 +13,7 @@ import alembic.script
 from alembic.runtime import migration
 from gobcore.model.sa.management import AuditLog, Base, Job, JobStep, Log, Service, ServiceTask, Task
 from gobcore.typesystem.json import GobTypeJSONEncoder
-from sqlalchemy import String, and_, create_engine, or_
+from sqlalchemy import String, and_, create_engine, or_, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
@@ -137,7 +139,7 @@ def is_connected():
         return False
     else:
         try:
-            session.execute("SELECT 1")
+            session.execute(text("SELECT 1"))
             return True
         except Exception:
             return False
