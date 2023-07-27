@@ -346,7 +346,7 @@ def job_get(job_id):
 
 
 @session_auto_reconnect
-def job_runs(jobinfo: Job, msg: dict, allow_parallel_zombie: bool = True) -> bool:
+def job_runs(jobinfo: Job, msg: dict, allow_start_new_when_zombie: bool = True) -> bool:
     """
     Checks for job duplicate based on header information, if all equal:
      - Model:
@@ -386,10 +386,10 @@ def job_runs(jobinfo: Job, msg: dict, allow_parallel_zombie: bool = True) -> boo
 
     print(
         f"Found already running job '{job.id}', started {job.start} (zombie: {job.is_zombie()}, "
-        f"allow_parallel_zombie: {allow_parallel_zombie})"
+        f"allow_start_new_when_zombie: {allow_start_new_when_zombie})"
     )
 
-    if not allow_parallel_zombie:
+    if not allow_start_new_when_zombie:
         return True
     return not job.is_zombie()
 
