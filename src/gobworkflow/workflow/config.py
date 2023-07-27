@@ -68,6 +68,8 @@ EVENT_PRODUCE_START = "event_produce_start"
 # Default check for absence of errors before starting next step
 DEFAULT_CONDITION = has_no_errors
 
+CONF_ALLOW_START_NEW_WHEN_ZOMBIE = "allow_start_new_when_zombie"
+
 # The GOB workflows
 WORKFLOWS = {
     # Example
@@ -221,6 +223,7 @@ WORKFLOWS = {
         EVENT_PRODUCE_START: {
             "function": lambda msg: start_step(EVENT_PRODUCE, msg),
         },
+        CONF_ALLOW_START_NEW_WHEN_ZOMBIE: False,
     },
 }
 

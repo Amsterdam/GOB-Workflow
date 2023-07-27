@@ -24,7 +24,7 @@ from gobcore.workflow.start_workflow import retry_workflow
 
 from gobworkflow.config import LOG_HANDLERS, LOG_NAME
 from gobworkflow.storage.storage import job_get, job_runs, job_update
-from gobworkflow.workflow.config import WORKFLOWS
+from gobworkflow.workflow.config import CONF_ALLOW_START_NEW_WHEN_ZOMBIE, WORKFLOWS
 from gobworkflow.workflow.jobs import job_end, job_start, step_start, step_status
 from gobworkflow.workflow.start import END_OF_WORKFLOW, start_step
 from gobworkflow.workflow.tree import WorkflowTreeNode
@@ -45,14 +45,14 @@ class Workflow:
         self._workflow_name = workflow_name
         self._step_name = step_name
         self._workflow_changed = False
-        self._allow_parallel_zombie = True
+        self._allow_start_new_when_zombie = True
 
         if dynamic_workflow_steps:
             workflow = self._build_dynamic_workflow(dynamic_workflow_steps)
         else:
             workflow_dict = WORKFLOWS[self._workflow_name]
             workflow = WorkflowTreeNode.from_dict(workflow_dict)
-            self._allow_parallel_zombie = workflow_dict.get("allow_parallel_zombie", True)
+            self._allow_start_new_when_zombie = workflow_dict.get(CONF_ALLOW_START_NEW_WHEN_ZOMBIE, True)
 
         self._step = workflow if step_name is None else workflow.get_node(step_name)
 
@@ -136,7 +136,7 @@ class Workflow:
             msg["header"] = {
                 **msg.get("header", {}),
             }
-            if job_runs(job, msg, allow_parallel_zombie=self._allow_parallel_zombie):
+            if job_runs(job, msg, allow_start_new_when_zombie=self._allow_start_new_when_zombie):
                 msg["header"]["process_id"] = job["id"]
                 self.reject(msg, job)
                 return self.retry_or_fail(original_msg, retry_time)
