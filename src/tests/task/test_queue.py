@@ -339,6 +339,7 @@ class TestTaskQueue(TestCase):
         mock_get_tasks.return_value = [
             Task(id=1, name='task1', status=self.task_queue.STATUS_COMPLETED, summary=summary1),
             Task(id=2, name='task2', status=self.task_queue.STATUS_NEW, summary=summary2),
+            Task(id=3, name='task3', status=self.task_queue.STATUS_ABORTED),
         ]
 
         task_arg = Task(stepid=self.stepid, jobid=self.jobid, key_prefix="prefix",
