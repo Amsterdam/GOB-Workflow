@@ -233,9 +233,14 @@ class TaskQueue:
         :return:
         """
         all_tasks = get_tasks_for_stepid(task.stepid)
-        warnings = [warning for sublist in [t.summary["warnings"] for t in all_tasks] for warning in sublist]
-        errors = [error for sublist in [t.summary["errors"] for t in all_tasks] for error in sublist]
-
+        warnings = [
+            warning
+            for sublist in [t.summary["warnings"] for t in all_tasks if t.summary is not None]
+            for warning in sublist
+        ]
+        errors = [
+            error for sublist in [t.summary["errors"] for t in all_tasks if t.summary is not None] for error in sublist
+        ]
         msg = {
             **task.extra_msg,
             "header": {
