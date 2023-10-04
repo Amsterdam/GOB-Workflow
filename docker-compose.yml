@@ -19,7 +19,7 @@ services:
       - ./src/gobworkflow:/app/gobworkflow
       - ./src/tests:/app/tests
       - ./src/alembic:/app/alembic
-      - ${GOB_CORE_DIR-../GOB-Core}:/app/GOB-Core
+      - ${GOB_CORE_DIR-../GOB-Core}:/app/src/gobcore
 
 volumes:
   gob-volume:
